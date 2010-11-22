@@ -78,7 +78,7 @@ function evaluateCountOfAllEdits($changesForUsers)
 /*!
  * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
  */
-function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing)
+function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle)
 {
   while (list($editorName,$numEditing)=each($changesForUsers))
     $text.= "\n" . '"' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . "[penwidth=" . getNorm($numEditing, $sumEditing) . "label=".$numEditing ."]" . " ;";
@@ -94,7 +94,15 @@ function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing)
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
   global $wgRequest;
-  $thisPageTitle = $wgRequest->getText( 'title' );
+  $thisPageTitle="";
+  if (!(isset($args["page"])))
+  {
+    $thisPageTitle = $wgRequest->getText( 'title' );
+  }
+  else
+  {
+    $thisPageTitle = $args["page"];
+  }
   $res = getPageEditorsFromDb($thisPageTitle);
 
   $text = '<graphviz>
@@ -105,7 +113,7 @@ node[fontsize=8, fontcolor="blue", shape="none", style=""] ;';
 
   $changesForUsers = getCountsOfEditing($res);
   $sumEditing = evaluateCountOfAllEdits($changesForUsers);
-  $text.=getGraphvizNodes($changesForUsers, $numEditing, $sumEditing);
+  $text.=getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle);
 
   $text.= "</graphviz>";
   
@@ -122,15 +130,18 @@ $wgHooks['SkinTemplateContentActions'][] = 'showCollaborationDiagramTab';
  */
 function showCollaborationDiagramTab( $content_actions ) 
 {
-  global $wgTitle, $wgScriptPath;
+  global $wgTitle, $wgScriptPath, $wgRequest;
 
   if( $wgTitle->exists() &&  ($wgTitle->getNamespace() != NS_SPECIAL) )
   {
+    require_once("Title.php");
     $content_actions['CollaborationDiagram'] = array(
       'class' => false,
       'text' => 'CollaborationDiagram',
-      'href' => $wgTitle->getPartialURL() . '/Special:CollaborationDiagram/' . $wgTitle ,
+      'href' => $wgScriptPath . '?title=Special:CollaborationDiagram' . '&param=' . $wgRequest->getText('title') ,
     );    
   }    
 return true;
 }
+
+include_once("SpecialCollaborationDiagram.php");

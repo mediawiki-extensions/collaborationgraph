@@ -15,7 +15,7 @@ class CollaborationDiagram extends SpecialPage {
 
     # Do stuff
     # ...
-    $output="Hello world!";
+    $output="<collaborationdia page=\"$param\">";
     $wgOut->addWikiText( $output );
   }
 }
