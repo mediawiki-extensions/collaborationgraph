@@ -1,4 +1,20 @@
 <?php
+# Alert the user that this is not a valid entry point to MediaWiki if they try to access the special pages file directly.
+if (!defined('MEDIAWIKI')) {
+  echo <<<EOT
+To install my extension, put the following line in LocalSettings.php:
+  require_once( "\$IP/extensions/CollaborationDiagram/CollaborationDiagram.php" );
+EOT;
+  exit( 1 );
+}
+ $wgExtensionCredits['specialpage'][] = array(
+  'name' => 'CollaborationDiagram',
+  'author' => 'Yury Katkov',
+  'url' => 'http://www.mediawiki.org/wiki/Extension:CollaborationDiagram',
+  'description' => 'Shows graph that represents how much each user participated in a creation of the article',
+  'descriptionmsg' => 'collaborationdiagram-desc',  
+  'version' => '0.0.1',
+);
 
 $wgHooks['ParserFirstCallInit'][] = 'efSampleParserInit';
  
@@ -81,11 +97,9 @@ function evaluateCountOfAllEdits($changesForUsers)
 function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle)
 {
   while (list($editorName,$numEditing)=each($changesForUsers))
-    $text.= "\n" . '"' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . "[penwidth=" . getNorm($numEditing, $sumEditing) . "label=".$numEditing ."]" . " ;";
+    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . "[penwidth=" . getNorm($numEditing, $sumEditing) . "label=".$numEditing ."]" . " ;";
 
   return $text;
-
-
 }
 /*!
  * \brief here is an old generation function. I'm refactoring it now
@@ -94,16 +108,10 @@ function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageT
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
   global $wgRequest;
-  $thisPageTitle="";
-  if (!(isset($args["page"])))
-  {
-    $thisPageTitle = $wgRequest->getText( 'title' );
-  }
-  else
-  {
-    $thisPageTitle = $args["page"];
-  }
-  $res = getPageEditorsFromDb($thisPageTitle);
+
+
+  $pagesList = array();
+  $pagesList = (isset($args["page"])) ? explode(";",$args["page"]) : $wgRequest->getText('title');
 
   $text = '<graphviz>
 digraph W {
@@ -111,13 +119,17 @@ rankdir = LR ;
 node [URL="' . $_SERVER['PHP_SELF'] . '/\N"] ;
 node[fontsize=8, fontcolor="blue", shape="none", style=""] ;';
 
-  $changesForUsers = getCountsOfEditing($res);
-  $sumEditing = evaluateCountOfAllEdits($changesForUsers);
-  $text.=getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle);
+  foreach ($pagesList as $thisPageTitle )
+  {
+    $res = getPageEditorsFromDb($thisPageTitle);
 
-  $text.= "</graphviz>";
-  
+    $changesForUsers = getCountsOfEditing($res);
+    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
+    $text.=getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle);
+
+  }
   $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
+  $text.= "</graphviz>";
   return $text;
 }
 
