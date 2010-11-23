@@ -59,8 +59,30 @@ function getPageEditorsFromDb($thisPageTitle)
 
   $res = $dbr->query($sql);
   return $res;
-
 }
+
+function getCategoryPagesFromDb($categoryName)
+{
+  $dbr =& wfGetDB( DB_SLAVE );
+  $tbl_categoryLinks = 'categorylinks';
+  $sql = "
+      SELECT
+      page_title
+      from $tbl_categoryLinks 
+      LEFT JOIN page on categorylinks.cl_from=page.page_id
+      WHERE cl_to=\"$categoryName\";
+  ";
+  $res = $dbr->query($sql);
+
+  $result = array();
+  //formatting output array of names:
+  foreach ($res as $row)
+  {
+    array_push($result, $row->page_title);
+  }
+  return $result;
+}
+
 /*!
  * \brief Function that evaluate hom much time each user edited the page
  * \return array : username -> how much time edited
@@ -101,6 +123,8 @@ function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageT
 
   return $text;
 }
+
+
 /*!
  * \brief here is an old generation function. I'm refactoring it now
  * XXX
@@ -111,7 +135,21 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
 
 
   $pagesList = array();
-  $pagesList = (isset($args["page"])) ? explode(";",$args["page"]) : $wgRequest->getText('title');
+  if (empty($args))
+  {
+    $pagesList = $wgRequest->getText('title');
+  }
+    
+  if  (isset($args["page"]))
+  {
+    $pagesList = explode(";",$args["page"]);
+  }
+  if (isset($args["category"]))
+  {
+    $pagesFromCategory = array();
+    $pagesFromCategory = getCategoryPagesFromDb($args["category"]);
+    $pagesList = array_merge($pagesList, $pagesFromCategory) ;
+  }
 
   $text = '<graphviz>
 digraph W {
@@ -150,9 +188,10 @@ function showCollaborationDiagramTab( $content_actions )
     $content_actions['CollaborationDiagram'] = array(
       'class' => false,
       'text' => 'CollaborationDiagram',
+      //if ($wgTitle->getNamespace()==NS_CATEGORY) // XXX here I stopped
       'href' => $wgScriptPath . '?title=Special:CollaborationDiagram' . '&param=' . $wgRequest->getText('title') ,
     );    
-  }    
+  }
 return true;
 }
 
