@@ -63,14 +63,15 @@ function getPageEditorsFromDb($thisPageTitle)
 
 function getCategoryPagesFromDb($categoryName)
 {
+  //and go!
   $dbr =& wfGetDB( DB_SLAVE );
   $tbl_categoryLinks = 'categorylinks';
   $sql = "
-      SELECT
-      page_title
-      from $tbl_categoryLinks 
-      LEFT JOIN page on categorylinks.cl_from=page.page_id
-      WHERE cl_to=\"$categoryName\";
+    SELECT
+    page_title
+    from $tbl_categoryLinks 
+    LEFT JOIN page on categorylinks.cl_from=page.page_id
+    WHERE cl_to=\"$categoryName\";
   ";
   $res = $dbr->query($sql);
 
@@ -188,9 +189,16 @@ function showCollaborationDiagramTab( $content_actions )
     $content_actions['CollaborationDiagram'] = array(
       'class' => false,
       'text' => 'CollaborationDiagram',
-      //if ($wgTitle->getNamespace()==NS_CATEGORY) // XXX here I stopped
-      'href' => $wgScriptPath . '?title=Special:CollaborationDiagram' . '&param=' . $wgRequest->getText('title') ,
-    );    
+    );
+    if ($wgTitle->getNamespace()==NS_CATEGORY)
+    {
+      $content_actions['CollaborationDiagram']['href'] = $wgScriptPath . '?title=Special:CollaborationDiagram' . '&category=' . $wgRequest->getText('title');
+    }
+    else
+    {
+     $content_actions['CollaborationDiagram']['href'] = $wgScriptPath . '?title=Special:CollaborationDiagram' . '&page=' . $wgRequest->getText('title');
+    }
+        
   }
 return true;
 }

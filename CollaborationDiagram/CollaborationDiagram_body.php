@@ -11,11 +11,22 @@ class CollaborationDiagram extends SpecialPage {
     $this->setHeaders();
 
     # Get request data from, e.g.
-    $param = $wgRequest->getText('param');
+    $output= "";
+    if ($wgRequest->getText('page')!="")
+    {
+      $param = $wgRequest->getText('page');
+      $output="<collaborationdia page=\"$param\">";
+    }
+    else if ($wgRequest->getText('category')!="")
+    {
+      $category = $wgRequest->getText('category');
+      //Here I delete Category: from the name of Category
+      global $wgContLang;
+      $namespace_labels = $wgContLang->getNamespaces();
+      $category = str_replace($namespace_labels[NS_CATEGORY].":","",$category);
 
-    # Do stuff
-    # ...
-    $output="<collaborationdia page=\"$param\">";
+      $output="<collaborationdia category=\"$category\">";
+    }
     $wgOut->addWikiText( $output );
   }
 }
