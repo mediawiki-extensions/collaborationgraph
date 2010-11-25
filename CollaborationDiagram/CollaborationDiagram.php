@@ -119,9 +119,25 @@ function evaluateCountOfAllEdits($changesForUsers)
  */
 function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle)
 {
-  while (list($editorName,$numEditing)=each($changesForUsers))
-    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . "[penwidth=" . getNorm($numEditing, $sumEditing) . "label=".$numEditing ."]" . " ;";
 
+  //here we can optimize a little bit and do everything in one loop with puck_backs of users
+  $text = "";
+  while (list($editorName,$numEditing)=each($changesForUsers))
+  {
+    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getNorm($numEditing, $sumEditing) . " label=".$numEditing ."]" . " ;";
+    
+  }
+  //here we'll make red links for pages that doesn't exist
+  reset($changesForUsers);
+  $editors = array_unique(array_keys($changesForUsers));
+  while (list($key,$editorName)=each($editors))
+  { 
+    $title = Title::newFromText( "User:$editorName" );
+    if (!$title->exists())
+    {
+      $text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] ;' . " \n"  ;
+    }
+  }
   return $text;
 }
 
@@ -151,12 +167,21 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
     $pagesFromCategory = getCategoryPagesFromDb($args["category"]);
     $pagesList = array_merge($pagesList, $pagesFromCategory) ;
   }
-
-  $text = '<graphviz>
-digraph W {
-rankdir = LR ;
-node [URL="' . $_SERVER['PHP_SELF'] . '/\N"] ;
-node[fontsize=8, fontcolor="blue", shape="none", style=""] ;';
+  
+  $skinFilename = (isset($wgCollaborationDiagramSkinFilename)) ? $wgCollaborationDiagramSkinFilename :  "default.dot";
+  $text = "<graphviz>";
+  if (!is_file( dirname( __FILE__). "/" .$skinFilename))
+  {
+    $text .= 'digraph W {
+	rankdir = LR ;
+	node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;
+	node [fontsize=10, fontcolor="blue", shape="none", style=""] ;' ;
+  }
+  else
+  {
+    $text .= file_get_contents(dirname( __FILE__). "/" . $skinFilename);
+    $text .= "\n". 'node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;' . "\n";
+  }  
 
   foreach ($pagesList as $thisPageTitle )
   {
