@@ -9,7 +9,7 @@ EOT;
 }
  $wgExtensionCredits['specialpage'][] = array(
   'name' => 'CollaborationDiagram',
-  'author' => 'Yury Katkov',
+  'author' => 'Yury Katkov, Yevgeny Patarakin, Irina Pochinok',
   'url' => 'http://www.mediawiki.org/wiki/Extension:CollaborationDiagram',
   'description' => 'Shows graph that represents how much each user participated in a creation of the article',
   'descriptionmsg' => 'collaborationdiagram-desc',  
@@ -19,17 +19,29 @@ EOT;
 $wgHooks['ParserFirstCallInit'][] = 'efSampleParserInit';
  
 function efSampleParserInit( &$parser ) {
-	$parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
+  $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
 	return true;
 }
 /*!
  * \brief normalization function
  * This is a function for edges to be in the same order of thickness
  * to prevent situations when you have one edge with thickness=1 and other with thickness=155
+ * \param $norm - normalization value
  */
-function getNorm($val, $sum)
+function getNorm($val, $sum, $norm)
 {
-  return ceil(($val*12)/$sum);
+  return ceil(($val*$norm)/$sum);
+}
+
+function getNormNotCeil($val, $sum, $norm)
+{
+  return ($val*$norm)/$sum;
+}
+
+
+function getLogThickness($val, $sum, $norm)
+{
+  return log(($val*$norm)/$sum+1);
 }
 
 
@@ -117,15 +129,13 @@ function evaluateCountOfAllEdits($changesForUsers)
 /*!
  * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
  */
-function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle)
+function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
 {
-
-  //here we can optimize a little bit and do everything in one loop with puck_backs of users
   $text = "";
   while (list($editorName,$numEditing)=each($changesForUsers))
   {
-    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getNorm($numEditing, $sumEditing) . " label=".$numEditing ."]" . " ;";
-    
+    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getNormNotCeil($numEditing, $sumEditing,12) . " label=".$numEditing ."]" . " ;";
+
   }
   //here we'll make red links for pages that doesn't exist
   reset($changesForUsers);
@@ -139,6 +149,28 @@ function getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageT
     }
   }
   return $text;
+}
+
+function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
+{
+  $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
+  $text .= 'chd=t:';
+  while (list($editorName,$numEditing)=each($changesForUsers))
+  {
+   $text .= $numEditing . ","  ;  
+  }
+  $text = substr_replace($text, '',-1);
+  $text .= '&';
+  $text .= 'chl=';
+  reset($changesForUsers);
+  while (list($editorName,$numEditing)=each($changesForUsers))
+  {
+    $text .=$editorName . "|" ;
+  }
+  $text = substr_replace($text, '',-1);
+  $text .= '">';
+  return $text;
+
 }
 
 
@@ -189,11 +221,13 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
 
     $changesForUsers = getCountsOfEditing($res);
     $sumEditing = evaluateCountOfAllEdits($changesForUsers);
-    $text.=getGraphvizNodes($changesForUsers, $numEditing, $sumEditing, $thisPageTitle);
+    $text.=getGraphvizNodes($changesForUsers, $sumEditing, $thisPageTitle);
+    
 
   }
-  $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   $text.= "</graphviz>";
+ // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
+  $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   return $text;
 }
 
