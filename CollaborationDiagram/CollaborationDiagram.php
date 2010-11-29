@@ -177,7 +177,7 @@ function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
 
 }
 function drawDiagram($settings, $parser, $frame) {
-
+  global $wgTitle;
   $text = "<graphviz>";
   if (!is_file( dirname( __FILE__). "/" .$settings['skin']))
   {
@@ -185,11 +185,12 @@ function drawDiagram($settings, $parser, $frame) {
 	rankdir = LR ;
 	node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;
 	node [fontsize=10, fontcolor="blue", shape="none", style=""] ;' ;
+
   }
   else
   {
     $text .= file_get_contents(dirname( __FILE__). "/" . $settings['skin']);
-    $text .= "\n". 'node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;' . "\n";
+    $text .= "\n". 'node [URL="' . $_SERVER['SCRIPT_NAME'] . '?title=\N"] ;' . "\n";
   }  
 
   $changesForUsers = array();
