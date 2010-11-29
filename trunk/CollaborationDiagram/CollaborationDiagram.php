@@ -41,7 +41,7 @@ function getNormNotCeil($val, $sum, $norm)
 
 function getLogThickness($val, $sum, $norm)
 {
-  return log(($val*$norm)/$sum+1);
+  return log($val/$sum+1)*$norm;
 }
 
 
@@ -138,7 +138,7 @@ function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
   $text = "";
   while (list($editorName,$numEditing)=each($changesForUsers))
   {
-    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getNormNotCeil($numEditing, $sumEditing,12) . " label=".$numEditing ."]" . " ;";
+    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
 
   }
   //here we'll make red links for pages that doesn't exist
@@ -192,17 +192,24 @@ function drawDiagram($settings, $parser, $frame) {
     $text .= "\n". 'node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;' . "\n";
   }  
 
+  $changesForUsers = array();
+  $sumEditing=0;
   foreach ($settings['pagesList'] as $thisPageTitle )
   {
-    $res = getPageEditorsFromDb($thisPageTitle);
+    $names = getPageEditorsFromDb($thisPageTitle);
 
-    $changesForUsers = getCountsOfEditing($res);
-    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
-    $text.=getGraphvizNodes($changesForUsers, $sumEditing, $thisPageTitle);
-    
+    $changesForUsersForPage = getCountsOfEditing($names);
+    $pageWithChanges[$thisPageTitle]=$changesForUsersForPage;
+    $changesForUsers = array_merge($changesForUsers, $changesForUsersForPage);
+    $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
 
   }
-  $text.= "</graphviz>";
+  foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
+  {
+//    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
+    $text.=getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
+  }
+   $text.= "</graphviz>";
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
 
   $parser->disableCache();
