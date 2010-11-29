@@ -172,37 +172,10 @@ function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
   return $text;
 
 }
+function drawDiagram($settings, $parser, $frame) {
 
-
-/*!
- * \brief here is an old generation function. I'm refactoring it now
- * XXX
- */
-function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
-{
-  global $wgRequest;
-
-
-  $pagesList = array();
-  if (empty($args))
-  {
-    $pagesList = $wgRequest->getText('title');
-  }
-    
-  if  (isset($args["page"]))
-  {
-    $pagesList = explode(";",$args["page"]);
-  }
-  if (isset($args["category"]))
-  {
-    $pagesFromCategory = array();
-    $pagesFromCategory = getCategoryPagesFromDb($args["category"]);
-    $pagesList = array_merge($pagesList, $pagesFromCategory) ;
-  }
-  
-  $skinFilename = (isset($wgCollaborationDiagramSkinFilename)) ? $wgCollaborationDiagramSkinFilename :  "default.dot";
   $text = "<graphviz>";
-  if (!is_file( dirname( __FILE__). "/" .$skinFilename))
+  if (!is_file( dirname( __FILE__). "/" .$settings['skin']))
   {
     $text .= 'digraph W {
 	rankdir = LR ;
@@ -211,11 +184,11 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
   }
   else
   {
-    $text .= file_get_contents(dirname( __FILE__). "/" . $skinFilename);
+    $text .= file_get_contents(dirname( __FILE__). "/" . $settings['skin']);
     $text .= "\n". 'node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;' . "\n";
   }  
 
-  foreach ($pagesList as $thisPageTitle )
+  foreach ($settings['pagesList'] as $thisPageTitle )
   {
     $res = getPageEditorsFromDb($thisPageTitle);
 
@@ -227,8 +200,53 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
   }
   $text.= "</graphviz>";
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
+
+  $parser->disableCache();
   $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   return $text;
+}
+
+/*!
+ * \brief here is an old generation function. I'm refactoring it now
+ * XXX
+ */
+function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
+{
+  global $wgRequest;
+  $settings = array();
+
+  $settings['pagesList'] = array();
+  if (!isset($args["page"])&&!isset($args['category']))
+  {
+    $settings['pagesList'] = array($wgRequest->getText('title'));
+  }
+  
+  if  (isset($args["page"]))
+  {
+    $settings['pagesList'] = explode(";",$args["page"]);
+  }
+
+  if (isset($args["category"]))
+  {
+    $pagesFromCategory = array();
+    $pagesFromCategory = getCategoryPagesFromDb($args["category"]);
+    $settings['pagesList'] = array_merge($settings['pagesList'], $pagesFromCategory) ;
+    $settings['category']=$args['category'];//XXX
+  }
+  
+   $settings['skin'] = 'default.dot';
+  if (isset($wgCollaborationDiagramSkinFilename))
+  {
+    $settings['skin'] = $wgCollaborationDiagramSkinFilename;
+  }
+  
+  $settings['diagramType'] = 'dot';
+  if (isset($args['type']))
+  {
+   $settings['diagramType']= $args['type'];
+  }
+
+  return drawDiagram($settings, $parser,$frame);
 }
 
 $wgHooks['SkinTemplateContentActions'][] = 'showCollaborationDiagramTab';
