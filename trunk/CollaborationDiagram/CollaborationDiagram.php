@@ -69,7 +69,12 @@ function getPageEditorsFromDb($thisPageTitle)
     page_title=\"$thisPageTitle\";
   ";
 
-  $res = $dbr->query($sql);
+  $rawUsers = $dbr->query($sql);
+  $res=array();
+  foreach ($rawUsers as $row)
+  {
+    array_push($res, $row->rev_user_text);
+  }
   return $res;
 }
 
@@ -100,13 +105,12 @@ function getCategoryPagesFromDb($categoryName)
  * \brief Function that evaluate hom much time each user edited the page
  * \return array : username -> how much time edited
  */
-function getCountsOfEditing($res)
+function getCountsOfEditing($names)
 {
  
   $changesForUsers = array();//an array where we'll store how much time each user edited the page
-  foreach ($res as $row)
+  foreach ($names as $curName)
   {
-    $curName = $row->rev_user_text;
     if (!isset($changesForUsers[$curName]))
       $changesForUsers[$curName]=1;
     else
