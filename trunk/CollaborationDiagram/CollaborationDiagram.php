@@ -176,15 +176,16 @@ function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
   return $text;
 
 }
+
 function drawDiagram($settings, $parser, $frame) {
   global $wgTitle;
   $text = "<graphviz>";
-  if (!is_file( dirname( __FILE__). "/" .$settings['skin']))
+  if (!is_file( dirname( __FILE__). "/" . $settings['skin']))
   {
     $text .= 'digraph W {
 	rankdir = LR ;
-	node [URL="' . $_SERVER['PHP_SELF'] . '?title=\N"] ;
-	node [fontsize=10, fontcolor="blue", shape="none", style=""] ;' ;
+	node [URL="' . 'ERROR' . '?title=\N"] ;
+	node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
 
   }
   else
@@ -224,7 +225,7 @@ function drawDiagram($settings, $parser, $frame) {
  */
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
-  global $wgRequest;
+  global $wgRequest, $wgCollaborationDiagramSkinFilename;
   $settings = array();
 
   $settings['pagesList'] = array();
@@ -246,7 +247,7 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
     $settings['category']=$args['category'];//XXX
   }
   
-   $settings['skin'] = 'default.dot';
+  $settings['skin'] = 'default.dot';
   if (isset($wgCollaborationDiagramSkinFilename))
   {
     $settings['skin'] = $wgCollaborationDiagramSkinFilename;
