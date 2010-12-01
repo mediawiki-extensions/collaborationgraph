@@ -7,7 +7,7 @@ To install my extension, put the following line in LocalSettings.php:
 EOT;
   exit( 1 );
 }
- $wgExtensionCredits['specialpage'][] = array(
+$wgExtensionCredits['specialpage'][] = array(
   'name' => 'CollaborationDiagram',
   'author' => 'Yury Katkov, Yevgeny Patarakin, Irina Pochinok',
   'url' => 'http://www.mediawiki.org/wiki/Extension:CollaborationDiagram',
@@ -17,10 +17,10 @@ EOT;
 );
 
 $wgHooks['ParserFirstCallInit'][] = 'efSampleParserInit';
- 
+
 function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
-	return true;
+  return true;
 }
 /*!
  * \brief normalization function
@@ -62,7 +62,7 @@ function getPageEditorsFromDb($thisPageTitle)
 
   $sql = "
     SELECT
-     rev_user_text
+    rev_user_text
     FROM $tbl_pag
     INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page
     WHERE
@@ -80,7 +80,6 @@ function getPageEditorsFromDb($thisPageTitle)
 
 function getCategoryPagesFromDb($categoryName)
 {
-  //and go!
   $dbr =& wfGetDB( DB_SLAVE );
   $tbl_categoryLinks = 'categorylinks';
   $sql = "
@@ -107,7 +106,7 @@ function getCategoryPagesFromDb($categoryName)
  */
 function getCountsOfEditing($names)
 {
- 
+
   $changesForUsers = array();//an array where we'll store how much time each user edited the page
   foreach ($names as $curName)
   {
@@ -138,7 +137,9 @@ function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
   $text = "";
   while (list($editorName,$numEditing)=each($changesForUsers))
   {
-    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
+    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " "
+      . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22)
+      . " label=".$numEditing ."]" . " ;";
 
   }
   //here we'll make red links for pages that doesn't exist
@@ -161,7 +162,7 @@ function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
   $text .= 'chd=t:';
   while (list($editorName,$numEditing)=each($changesForUsers))
   {
-   $text .= $numEditing . ","  ;  
+    $text .= $numEditing . ","  ;  
   }
   $text = substr_replace($text, '',-1);
   $text .= '&';
@@ -176,24 +177,29 @@ function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
   return $text;
 
 }
-
-function drawDiagram($settings, $parser, $frame) {
-  global $wgTitle;
+function drawGraphVizHeader($skin)
+{
   $text = "<graphviz>";
-  if (!is_file( dirname( __FILE__). "/" . $settings['skin']))
+  if (!is_file( dirname( __FILE__). "/" . $skin))
   {
-    $text .= 'digraph W {
-	rankdir = LR ;
-	node [URL="' . 'ERROR' . '?title=\N"] ;
-	node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
+    $text .= '</graphviz>
+    rankdir = LR ;
+    node [URL="' . 'ERROR' . '?title=\N"] ;
+    node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
 
   }
   else
   {
-    $text .= file_get_contents(dirname( __FILE__). "/" . $settings['skin']);
+    $text .= file_get_contents(dirname( __FILE__). "/" . $skin);
     $text .= "\n". 'node [URL="' . $_SERVER['SCRIPT_NAME'] . '?title=\N"] ;' . "\n";
   }  
+  return $text;
+}
 
+function drawDiagram($settings, $parser, $frame) {
+  global $wgTitle;
+  $skin = $settings['skin'];
+  $text = drawGraphVizHeader($skin);
   $changesForUsers = array();
   $sumEditing=0;
   foreach ($settings['pagesList'] as $thisPageTitle )
@@ -208,21 +214,17 @@ function drawDiagram($settings, $parser, $frame) {
   }
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
-//    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
     $text.=getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
   }
-   $text.= "</graphviz>";
- // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
+  $text.= "</graphviz>";
+
+  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
 
   $parser->disableCache();
   $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   return $text;
 }
 
-/*!
- * \brief here is an old generation function. I'm refactoring it now
- * XXX
- */
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
   global $wgRequest, $wgCollaborationDiagramSkinFilename;
@@ -233,7 +235,7 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
   {
     $settings['pagesList'] = array($wgRequest->getText('title'));
   }
-  
+
   if  (isset($args["page"]))
   {
     $settings['pagesList'] = explode(";",$args["page"]);
@@ -246,19 +248,18 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
     $settings['pagesList'] = array_merge($settings['pagesList'], $pagesFromCategory) ;
     $settings['category']=$args['category'];//XXX
   }
-  
+
   $settings['skin'] = 'default.dot';
   if (isset($wgCollaborationDiagramSkinFilename))
   {
     $settings['skin'] = $wgCollaborationDiagramSkinFilename;
   }
-  
+
   $settings['diagramType'] = 'dot';
   if (isset($args['type']))
   {
-   $settings['diagramType']= $args['type'];
+    $settings['diagramType']= $args['type'];
   }
-
   return drawDiagram($settings, $parser,$frame);
 }
 
@@ -286,11 +287,11 @@ function showCollaborationDiagramTab( $content_actions )
     }
     else
     {
-     $content_actions['CollaborationDiagram']['href'] = $wgScriptPath . '?title=Special:CollaborationDiagram' . '&page=' . $wgRequest->getText('title');
+      $content_actions['CollaborationDiagram']['href'] = $wgScriptPath . '?title=Special:CollaborationDiagram' . '&page=' . $wgRequest->getText('title');
     }
-        
+
   }
-return true;
+  return true;
 }
 
 include_once("SpecialCollaborationDiagram.php");
