@@ -175,10 +175,9 @@ function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
   $text = substr_replace($text, '',-1);
   $text .= '">';
   return $text;
-
 }
-function drawGraphVizHeader($skin)
-{
+
+function drawGraphVizHeader($skin) {
   $text = "<graphviz>";
   if (!is_file( dirname( __FILE__). "/" . $skin))
   {
@@ -186,7 +185,6 @@ function drawGraphVizHeader($skin)
     rankdir = LR ;
     node [URL="' . 'ERROR' . '?title=\N"] ;
     node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
-
   }
   else
   {
@@ -196,21 +194,44 @@ function drawGraphVizHeader($skin)
   return $text;
 }
 
+class Contributor
+{
+  private $user;
+  private $editCount;
+}
+
+class PageWithContribution {
+  private $listOfContributors;
+  private $pageName;
+  public function getSumOfEdits()
+  {
+  }
+  public function getName()
+  {
+  }
+  function __construct($pageName0)
+  {
+    $pageName = $pageName0;
+  }
+}
+
+
 function drawDiagram($settings, $parser, $frame) {
   global $wgTitle;
   $skin = $settings['skin'];
   $text = drawGraphVizHeader($skin);
+//  $text .=getCollaborationDiagram($settings['pagesList']);
   $changesForUsers = array();
   $sumEditing=0;
   foreach ($settings['pagesList'] as $thisPageTitle )
   {
+    $contributionPage = new PageWithContribution($thisPageTitle);
     $names = getPageEditorsFromDb($thisPageTitle);
 
     $changesForUsersForPage = getCountsOfEditing($names);
     $pageWithChanges[$thisPageTitle]=$changesForUsersForPage;
     $changesForUsers = array_merge($changesForUsers, $changesForUsersForPage);
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
-
   }
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
