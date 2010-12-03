@@ -7,6 +7,9 @@ To install my extension, put the following line in LocalSettings.php:
 EOT;
   exit( 1 );
 }
+
+include_once('DbAccessor.php');
+
 $wgExtensionCredits['specialpage'][] = array(
   'name' => 'CollaborationDiagram',
   'author' => 'Yury Katkov, Yevgeny Patarakin, Irina Pochinok',
@@ -53,30 +56,6 @@ function getLogThickness($val, $sum, $norm)
  *     MediaWiki default;  194.85.163.147; Ganqqwerty;  Ganqqwerty ; Ganqqwerty;  Ganqqwerty;
  *     Ganqqwerty; 92.62.62.48; Cheshirig; Cheshirig
  */
-function getPageEditorsFromDb($thisPageTitle)
-{
-  $dbr =& wfGetDB( DB_SLAVE );
-
-  $tbl_pag =  'page';
-  $tbl_rev = 'revision';
-
-  $sql = "
-    SELECT
-    rev_user_text
-    FROM $tbl_pag
-    INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page
-    WHERE
-    page_title=\"$thisPageTitle\";
-  ";
-
-  $rawUsers = $dbr->query($sql);
-  $res=array();
-  foreach ($rawUsers as $row)
-  {
-    array_push($res, $row->rev_user_text);
-  }
-  return $res;
-}
 
 function getCategoryPagesFromDb($categoryName)
 {
@@ -100,23 +79,6 @@ function getCategoryPagesFromDb($categoryName)
   return $result;
 }
 
-/*!
- * \brief Function that evaluate hom much time each user edited the page
- * \return array : username -> how much time edited
- */
-function getCountsOfEditing($names)
-{
-
-  $changesForUsers = array();//an array where we'll store how much time each user edited the page
-  foreach ($names as $curName)
-  {
-    if (!isset($changesForUsers[$curName]))
-      $changesForUsers[$curName]=1;
-    else
-      $changesForUsers[$curName]++;
-  }
-  return $changesForUsers;
-}
 
 /*!
  * \brief Sums all edits for all users
@@ -226,12 +188,10 @@ function drawDiagram($settings, $parser, $frame) {
   foreach ($settings['pagesList'] as $thisPageTitle )
   {
     $contributionPage = new PageWithContribution($thisPageTitle);
-    $names = getPageEditorsFromDb($thisPageTitle);
-
-    $changesForUsersForPage = getCountsOfEditing($names);
-    $pageWithChanges[$thisPageTitle]=$changesForUsersForPage;
-    $changesForUsers = array_merge($changesForUsers, $changesForUsersForPage);
-    $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
+    $page = DbAccessor::getInstance()->getPageEditorsFromDb($thisPageTitle);
+    $pageWithChanges[$thisPageTitle]=$page->getContribution();
+    $changesForUsers = array_merge($changesForUsers, $page->getContribution());
+    $sumEditing+=evaluateCountOfAllEdits($page->getContribution());
   }
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
