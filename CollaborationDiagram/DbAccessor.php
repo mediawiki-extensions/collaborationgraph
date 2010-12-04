@@ -13,18 +13,16 @@ EOT;
 }
 include "Page.php";
 
-class DbAccessor
-{
+class DbAccessor {
   private static $instance;
   private function __construct() { /* ... */ }
   private function __clone() { /* ... */ }
-  public static function getInstance()
-  {
+  public static function getInstance() {
     if (self::$instance === null)
       $instance = new self();
     return $instance;
   }
- 
+
   /**
    * \brief This function gets list of Users
    *  that edited current page from database
@@ -50,8 +48,7 @@ class DbAccessor
 
     $rawUsers = $dbr->query($sql);
     $userList=array();
-    foreach ($rawUsers as $row)
-    {
+    foreach ($rawUsers as $row) {
       array_push($userList, $row->rev_user_text);
     }
 
@@ -65,8 +62,7 @@ class DbAccessor
    * \brief Function that evaluate hom much time each user edited the page
    * \return array : username -> how much time edited
    */
-  private function getCountsOfEditing($names)
-  {
+  private function getCountsOfEditing($names) {
 
     $changesForUsers = array();//an array where we'll store how much time each user edited the page
     foreach ($names as $curName)
@@ -78,6 +74,4 @@ class DbAccessor
     }
     return $changesForUsers;
   }
-
-
 }
