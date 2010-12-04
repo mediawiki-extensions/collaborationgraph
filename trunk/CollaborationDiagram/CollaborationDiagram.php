@@ -118,8 +118,7 @@ function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
   return $text;
 }
 
-function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
-{
+function getPie($changesForUsers,  $sumEditing, $thisPageTitle) {
   $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
   $text .= 'chd=t:';
   while (list($editorName,$numEditing)=each($changesForUsers))
@@ -177,25 +176,12 @@ class PageWithContribution {
   }
 }
 
-
-function drawDiagram($settings, $parser, $frame) {
-  global $wgTitle;
+function drawGraphVizDiagram($settings, $pagesWithChanges, $sumEditing, $parser, $frame)
+{
   $skin = $settings['skin'];
   $text = drawGraphVizHeader($skin);
-//  $text .=getCollaborationDiagram($settings['pagesList']);
-  $changesForUsers = array();
-  $sumEditing=0;
-  foreach ($settings['pagesList'] as $thisPageTitle )
-  {
-    $contributionPage = new PageWithContribution($thisPageTitle);
-    $page = DbAccessor::getInstance()->getPageEditorsFromDb($thisPageTitle);
-    $pageWithChanges[$thisPageTitle]=$page->getContribution();
-    $changesForUsers = array_merge($changesForUsers, $page->getContribution());
-    $sumEditing+=evaluateCountOfAllEdits($page->getContribution());
-  }
-  foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
-  {
-    $text.=getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
+  foreach ($pagesWithChanges as $page) {
+    $text.=getGraphvizNodes($page->getContribution(), $sumEditing, $page->getTitle());
   }
   $text.= "</graphviz>";
 
@@ -206,8 +192,26 @@ function drawDiagram($settings, $parser, $frame) {
   return $text;
 }
 
-function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
-{
+
+function drawDiagram($settings, $parser, $frame) {
+  global $wgTitle;
+//  $text .=getCollaborationDiagram($settings['pagesList']);
+  $sumEditing=0;
+
+  $pagesWithChanges=array();
+  foreach ($settings['pagesList'] as $thisPageTitle ) {
+    $contributionPage = new PageWithContribution($thisPageTitle);
+    $page = DbAccessor::getInstance()->getPageEditorsFromDb($thisPageTitle);
+
+    array_push($pagesWithChanges,$page);
+    $sumEditing+=evaluateCountOfAllEdits($page->getContribution());
+  }
+
+  return drawGraphVizDiagram($settings, $pagesWithChanges,$sumEditing, $parser, $frame);
+
+}
+
+function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) {
   global $wgRequest, $wgCollaborationDiagramSkinFilename;
   $settings = array();
 
@@ -241,6 +245,7 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
   {
     $settings['diagramType']= $args['type'];
   }
+  //here XXX
   return drawDiagram($settings, $parser,$frame);
 }
 
