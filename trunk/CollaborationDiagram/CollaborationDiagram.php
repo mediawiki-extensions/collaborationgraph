@@ -7,9 +7,6 @@ To install my extension, put the following line in LocalSettings.php:
 EOT;
   exit( 1 );
 }
-
-include_once('DbAccessor.php');
-
 $wgExtensionCredits['specialpage'][] = array(
   'name' => 'CollaborationDiagram',
   'author' => 'Yury Katkov, Yevgeny Patarakin, Irina Pochinok',
@@ -56,6 +53,30 @@ function getLogThickness($val, $sum, $norm)
  *     MediaWiki default;  194.85.163.147; Ganqqwerty;  Ganqqwerty ; Ganqqwerty;  Ganqqwerty;
  *     Ganqqwerty; 92.62.62.48; Cheshirig; Cheshirig
  */
+function getPageEditorsFromDb($thisPageTitle)
+{
+  $dbr =& wfGetDB( DB_SLAVE );
+
+  $tbl_pag =  'page';
+  $tbl_rev = 'revision';
+
+  $sql = "
+    SELECT
+    rev_user_text
+    FROM $tbl_pag
+    INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page
+    WHERE
+    page_title=\"$thisPageTitle\";
+  ";
+
+  $rawUsers = $dbr->query($sql);
+  $res=array();
+  foreach ($rawUsers as $row)
+  {
+    array_push($res, $row->rev_user_text);
+  }
+  return $res;
+}
 
 function getCategoryPagesFromDb($categoryName)
 {
@@ -79,6 +100,23 @@ function getCategoryPagesFromDb($categoryName)
   return $result;
 }
 
+/*!
+ * \brief Function that evaluate hom much time each user edited the page
+ * \return array : username -> how much time edited
+ */
+function getCountsOfEditing($names)
+{
+
+  $changesForUsers = array();//an array where we'll store how much time each user edited the page
+  foreach ($names as $curName)
+  {
+    if (!isset($changesForUsers[$curName]))
+      $changesForUsers[$curName]=1;
+    else
+      $changesForUsers[$curName]++;
+  }
+  return $changesForUsers;
+}
 
 /*!
  * \brief Sums all edits for all users
@@ -118,7 +156,8 @@ function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
   return $text;
 }
 
-function getPie($changesForUsers,  $sumEditing, $thisPageTitle) {
+function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
+{
   $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
   $text .= 'chd=t:';
   while (list($editorName,$numEditing)=each($changesForUsers))
@@ -176,12 +215,27 @@ class PageWithContribution {
   }
 }
 
-function drawGraphVizDiagram($settings, $pagesWithChanges, $sumEditing, $parser, $frame)
-{
+
+function drawDiagram($settings, $parser, $frame) {
+  global $wgTitle;
   $skin = $settings['skin'];
   $text = drawGraphVizHeader($skin);
-  foreach ($pagesWithChanges as $page) {
-    $text.=getGraphvizNodes($page->getContribution(), $sumEditing, $page->getTitle());
+//  $text .=getCollaborationDiagram($settings['pagesList']);
+  $changesForUsers = array();
+  $sumEditing=0;
+  foreach ($settings['pagesList'] as $thisPageTitle )
+  {
+    $contributionPage = new PageWithContribution($thisPageTitle);
+    $names = getPageEditorsFromDb($thisPageTitle);
+
+    $changesForUsersForPage = getCountsOfEditing($names);
+    $pageWithChanges[$thisPageTitle]=$changesForUsersForPage;
+    $changesForUsers = array_merge($changesForUsers, $changesForUsersForPage);
+    $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
+  }
+  foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
+  {
+    $text.=getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
   }
   $text.= "</graphviz>";
 
@@ -192,26 +246,8 @@ function drawGraphVizDiagram($settings, $pagesWithChanges, $sumEditing, $parser,
   return $text;
 }
 
-
-function drawDiagram($settings, $parser, $frame) {
-  global $wgTitle;
-//  $text .=getCollaborationDiagram($settings['pagesList']);
-  $sumEditing=0;
-
-  $pagesWithChanges=array();
-  foreach ($settings['pagesList'] as $thisPageTitle ) {
-    $contributionPage = new PageWithContribution($thisPageTitle);
-    $page = DbAccessor::getInstance()->getPageEditorsFromDb($thisPageTitle);
-
-    array_push($pagesWithChanges,$page);
-    $sumEditing+=evaluateCountOfAllEdits($page->getContribution());
-  }
-
-  return drawGraphVizDiagram($settings, $pagesWithChanges,$sumEditing, $parser, $frame);
-
-}
-
-function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) {
+function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
+{
   global $wgRequest, $wgCollaborationDiagramSkinFilename;
   $settings = array();
 
@@ -245,7 +281,6 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) {
   {
     $settings['diagramType']= $args['type'];
   }
-  //here XXX
   return drawDiagram($settings, $parser,$frame);
 }
 
