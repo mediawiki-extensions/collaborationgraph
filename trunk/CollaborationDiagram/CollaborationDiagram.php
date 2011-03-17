@@ -60,7 +60,7 @@ function getPageEditorsFromDb($thisPageTitle)
 
   $tbl_pag =  $wgDBprefix.'page';
   $tbl_rev = $wgDBprefix.'revision';
-
+ // echo ($thisPageTitle); // почему  то тут для хлеба выводятия Диаграмма соучастяи а не хлеб
   $sql = "
     SELECT
     rev_user_text
@@ -86,6 +86,7 @@ function getCategoryPagesFromDb($categoryName)
   $dbr =& wfGetDB( DB_SLAVE );
   $tbl_categoryLinks = $wgDBprefix.'categorylinks';
   $pageTable = $wgDBprefix.'page';
+  $categoryName = mysql_real_escape_string($categoryName);
   $sql = "
     SELECT
     page_title
