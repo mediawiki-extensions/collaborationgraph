@@ -1,0 +1,3 @@
+digraph W {
+  rankdir = LR ;
+  node[fontsize=10, fontcolor="blue", shape="none", style=""] ;
