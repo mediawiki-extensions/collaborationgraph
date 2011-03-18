@@ -222,8 +222,9 @@ function drawDiagram($settings, $parser, $frame) {
  */
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
-  global $wgRequest, $wgCollaborationDiagramSkinFilename;
+  global $wgRequest, $wgCollaborationDiagramSkinFilename, $wgOut;
   $settings = array();
+  print_r($settings);
 
   $settings['pagesList'] = array();
   if (!isset($args["page"])&&!isset($args['category']))
@@ -272,10 +273,12 @@ function showCollaborationDiagramTab( $content_actions )
 
   if( $wgTitle->exists() &&  ($wgTitle->getNamespace() != NS_SPECIAL) )
   {
+    wfLoadExtensionMessages('CollaborationDiagram');
+    
     require_once("Title.php");
     $content_actions['CollaborationDiagram'] = array(
       'class' => false,
-      'text' => 'CollaborationDiagram',
+      'text' => wfMsgForContent('tabcollaboration'),
     );
 
 	$pageName = $wgArticle->getTitle()->getDbKey();
