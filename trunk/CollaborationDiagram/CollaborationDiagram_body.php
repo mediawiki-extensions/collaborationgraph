@@ -15,7 +15,8 @@ class CollaborationDiagram extends SpecialPage {
     if ($wgRequest->getText('page')!="")
     {
       $param = $wgRequest->getText('page');
-      $output="<collaborationdia page=\"$param\">";
+      $param = mysql_escape_string($param);
+      $output.="<collaborationdia page=\"$param\">";
     }
     else if ($wgRequest->getText('category')!="")
     {
