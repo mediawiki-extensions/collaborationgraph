@@ -5,14 +5,14 @@ $messages = array();
 $messages['en'] = array(
       'collaborationdiagram' => 'Collaboration Diagram',
       'collaborationdiagram-desc' => "Shows collaboration graph",
-      'tabcollaboration' => 'authors',
+      'tabcollaboration' => 'Authors',
     );
  
-/* *** German (Deutsch) *** */
+/* *** Russian (Русский) *** */
 $messages['ru'] = array(
     'collaborationdiagram' => 'Диаграмма соучастия',
       'myextension-desc' => 'Показывает граф соучастия',
-      'tabcollaboration' => 'авторы',
+      'tabcollaboration' => 'Авторы',
     );
 
 
