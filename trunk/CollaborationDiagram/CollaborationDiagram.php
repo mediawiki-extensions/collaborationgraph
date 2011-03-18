@@ -10,7 +10,7 @@ EOT;
  $wgExtensionCredits['specialpage'][] = array(
   'name' => 'CollaborationDiagram',
   'author' => 'Yury Katkov, Yevgeny Patarakin, Irina Pochinok',
-  'url' => 'http://www.mediawiki.org/wiki/Extension:CollaborationDiagram',
+  'url' => 'http://www.mediawiki.org/wiki/Extension:Collaboration_Diagram',
   'description' => 'Shows graph that represents how much each user participated in a creation of the article',
   'descriptionmsg' => 'collaborationdiagram-desc',  
   'version' => '0.0.1',
