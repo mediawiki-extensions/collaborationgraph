@@ -61,14 +61,7 @@ function getPageEditorsFromDb($thisPageTitle)
   $tbl_pag =  $wgDBprefix.'page';
   $tbl_rev = $wgDBprefix.'revision';
  // echo ($thisPageTitle); // почему  то тут для хлеба выводятия Диаграмма соучастяи а не хлеб
-  $sql = "
-    SELECT
-    rev_user_text
-    FROM $tbl_pag
-    INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page
-    WHERE
-    page_title=\"$thisPageTitle\";
-  ";
+  $sql = sprintf("SELECT rev_user_text  FROM $tbl_pag  INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page  WHERE page_title=\"%s\";  ", mysql_escape_string($thisPageTitle));
 
   $rawUsers = $dbr->query($sql);
   $res=array();
@@ -142,7 +135,7 @@ function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
   $text = "";
   while (list($editorName,$numEditing)=each($changesForUsers))
   {
-    $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
+    $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
 
   }
   //here we'll make red links for pages that doesn't exist
