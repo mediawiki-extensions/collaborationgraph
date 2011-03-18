@@ -261,13 +261,14 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
 }
 
 $wgHooks['SkinTemplateContentActions'][] = 'showCollaborationDiagramTab';
-
+$wgHooks['SkinTemplateTabs'][] = 'showCollaborationDiagramTab';
+$wgHooks['SkinTemplateNavigation'][] = 'showCollaborationDiagramTabInVector';
 /*!
  * \brief function that show tab
  * very simple, see this extension : http://www.mediawiki.org/wiki/Extension:Tab0
  * and here is full explanation http://svn.wikimedia.org/viewvc/mediawiki/trunk/extensions/examples/Content_action.php?view=markup
  */
-function showCollaborationDiagramTab( $content_actions ) 
+function showCollaborationDiagramTab( $obj , &$content_actions  ) 
 {
   global $wgTitle, $wgScriptPath, $wgRequest, $wgArticle;
 
@@ -295,4 +296,16 @@ function showCollaborationDiagramTab( $content_actions )
 return true;
 }
 
+function showCollaborationDiagramTabInVector( $obj, &$links )
+{
+  // the old '$content_actions' array is thankfully just a
+  // sub-array of this one
+  $views_links = $links['views'];
+  showCollaborationDiagramTab( $obj, $views_links );
+  $links['views'] = $views_links;
+  return true;
+
+
+
+}
 include_once("SpecialCollaborationDiagram.php");
