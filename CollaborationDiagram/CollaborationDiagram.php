@@ -22,11 +22,33 @@ function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
 	return true;
 }
-//abstract class Drawer { 
-//  public function draw($changesForUsers, $sumEditing, $thisPageTitle);
-//}
-  
-class Drawer {
+interface Drawer { 
+  public function draw($changesForUsers, $sumEditing, $thisPageTitle);
+}
+// class DrawerFactory
+// {
+//   public static function getDrawer() {
+//     global $wgCollaborationDiagramDiagramType;
+//
+//     switch($wgCollaborationDiagramDiagramType) {
+//       case 'pie':
+//         return new PieDrawer();
+//       case 'graphviz-thickness':
+//         return new GraphVizDrawer();
+//       case 'graphviz-figures':
+//         return new FiguresDrawer();
+//     }
+//
+//   }
+// }
+
+/*
+   Это лажовый класс. Рисовальщик должен быть всего графа, а этот класс рисует только мясо
+ 
+ */
+class GraphVizDrawer implements Drawer {
+
+
   /*!
    * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
    */
@@ -41,18 +63,23 @@ class Drawer {
     //here we'll make red links for pages that doesn't exist
     reset($changesForUsers);
     $editors = array_unique(array_keys($changesForUsers));
-    while (list($key,$editorName)=each($editors))
-    { 
+    while (list($key,$editorName)=each($editors)) { 
       $title = Title::newFromText( "User:$editorName" );
-      if (!$title->exists())
-      {
+      if (!$title->exists()) {
 	$text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] ;' . " \n"  ;
       }
     }
     return $text;
   }
 
-  function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
+  private function printWikiLinksToUsers() {
+
+  }
+
+}
+
+class PieDrawer implements Drawer {
+  public function draw($changesForUsers,  $sumEditing, $thisPageTitle)
   {
     $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
     $text .= 'chd=t:';
@@ -73,6 +100,12 @@ class Drawer {
     return $text;
 
   }
+}
+
+class FiguresDrawer implements Drawer {
+  public function draw($changesForUsers,  $sumEditing, $thisPageTitle) {
+  }
+
 }
 /*!
  * \brief normalization function
@@ -212,7 +245,7 @@ function drawDiagram($settings, $parser, $frame) {
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
 
   }
-  $drawer = new Drawer();
+  $drawer = new GraphVizDrawer();
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
 //    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
