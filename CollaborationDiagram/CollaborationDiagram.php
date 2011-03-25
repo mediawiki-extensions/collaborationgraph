@@ -25,7 +25,7 @@ function efSampleParserInit( &$parser ) {
 //abstract class Drawer { 
 //  public function draw($changesForUsers, $sumEditing, $thisPageTitle);
 //}
-
+  
 class Drawer {
   /*!
    * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
