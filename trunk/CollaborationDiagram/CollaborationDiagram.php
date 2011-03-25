@@ -10,10 +10,10 @@ EOT;
  $wgExtensionCredits['specialpage'][] = array(
   'name' => 'CollaborationDiagram',
   'author' => 'Yury Katkov, Yevgeny Patarakin, Irina Pochinok',
-  'url' => 'http://www.mediawiki.org/wiki/Extension:Collaboration_Diagram',
+  'url' => 'http://www.mediawiki.org/wiki/Extension:CollaborationDiagram',
   'description' => 'Shows graph that represents how much each user participated in a creation of the article',
   'descriptionmsg' => 'collaborationdiagram-desc',  
-  'version' => '0.0.1',
+  'version' => '0.1.0',
 );
 
 $wgHooks['ParserFirstCallInit'][] = 'efSampleParserInit';
@@ -21,6 +21,33 @@ $wgHooks['ParserFirstCallInit'][] = 'efSampleParserInit';
 function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
 	return true;
+}
+
+class Drawer {
+  /*!
+   * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
+   */
+  public function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
+  {
+    $text = "";
+    while (list($editorName,$numEditing)=each($changesForUsers))
+    {
+      $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
+
+    }
+    //here we'll make red links for pages that doesn't exist
+    reset($changesForUsers);
+    $editors = array_unique(array_keys($changesForUsers));
+    while (list($key,$editorName)=each($editors))
+    { 
+      $title = Title::newFromText( "User:$editorName" );
+      if (!$title->exists())
+      {
+	$text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] ;' . " \n"  ;
+      }
+    }
+    return $text;
+  }
 }
 /*!
  * \brief normalization function
@@ -127,30 +154,7 @@ function evaluateCountOfAllEdits($changesForUsers)
   return $sumEditing;
 }
 
-/*!
- * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
- */
-function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
-{
-  $text = "";
-  while (list($editorName,$numEditing)=each($changesForUsers))
-  {
-    $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
 
-  }
-  //here we'll make red links for pages that doesn't exist
-  reset($changesForUsers);
-  $editors = array_unique(array_keys($changesForUsers));
-  while (list($key,$editorName)=each($editors))
-  { 
-    $title = Title::newFromText( "User:$editorName" );
-    if (!$title->exists())
-    {
-      $text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] ;' . " \n"  ;
-    }
-  }
-  return $text;
-}
 
 function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
 {
@@ -203,10 +207,12 @@ function drawDiagram($settings, $parser, $frame) {
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
 
   }
+  $drawer = new Drawer();
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
 //    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
-    $text.=getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    
+    $text.=$drawer->getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
   }
    $text.= "</graphviz>";
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
@@ -224,7 +230,6 @@ function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
 {
   global $wgRequest, $wgCollaborationDiagramSkinFilename, $wgOut;
   $settings = array();
-  print_r($settings);
 
   $settings['pagesList'] = array();
   if (!isset($args["page"])&&!isset($args['category']))
