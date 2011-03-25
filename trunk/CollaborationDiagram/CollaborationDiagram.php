@@ -22,12 +22,15 @@ function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
 	return true;
 }
+//abstract class Drawer { 
+//  public function draw($changesForUsers, $sumEditing, $thisPageTitle);
+//}
 
 class Drawer {
   /*!
    * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
    */
-  public function getGraphvizNodes($changesForUsers,  $sumEditing, $thisPageTitle)
+  public function draw($changesForUsers,  $sumEditing, $thisPageTitle)
   {
     $text = "";
     while (list($editorName,$numEditing)=each($changesForUsers))
@@ -47,6 +50,28 @@ class Drawer {
       }
     }
     return $text;
+  }
+
+  function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
+  {
+    $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
+    $text .= 'chd=t:';
+    while (list($editorName,$numEditing)=each($changesForUsers))
+    {
+      $text .= $numEditing . ","  ;  
+    }
+    $text = substr_replace($text, '',-1);
+    $text .= '&';
+    $text .= 'chl=';
+    reset($changesForUsers);
+    while (list($editorName,$numEditing)=each($changesForUsers))
+    {
+      $text .=$editorName . "|" ;
+    }
+    $text = substr_replace($text, '',-1);
+    $text .= '">';
+    return $text;
+
   }
 }
 /*!
@@ -156,27 +181,7 @@ function evaluateCountOfAllEdits($changesForUsers)
 
 
 
-function getPie($changesForUsers,  $sumEditing, $thisPageTitle)
-{
-  $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
-  $text .= 'chd=t:';
-  while (list($editorName,$numEditing)=each($changesForUsers))
-  {
-   $text .= $numEditing . ","  ;  
-  }
-  $text = substr_replace($text, '',-1);
-  $text .= '&';
-  $text .= 'chl=';
-  reset($changesForUsers);
-  while (list($editorName,$numEditing)=each($changesForUsers))
-  {
-    $text .=$editorName . "|" ;
-  }
-  $text = substr_replace($text, '',-1);
-  $text .= '">';
-  return $text;
 
-}
 
 function drawDiagram($settings, $parser, $frame) {
   global $wgTitle;
@@ -212,7 +217,7 @@ function drawDiagram($settings, $parser, $frame) {
   {
 //    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
     
-    $text.=$drawer->getGraphvizNodes($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    $text.=$drawer->draw($changesForUsersForPage, $sumEditing, $thisPageTitle);
   }
    $text.= "</graphviz>";
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
