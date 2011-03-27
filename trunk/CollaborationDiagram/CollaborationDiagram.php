@@ -65,25 +65,18 @@ class DrawerFactory
  */
 class GraphVizDrawer extends AbstractDrawer{
 
-  /*!
-   * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
-   */
-  public function draw() {
-    $text = "";
-    while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
-    {
-      $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $this->thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
-
-    }
-    $text .= $this->printWikiLinksToUsers();
+   public function draw() {
+    $text ='';
+    $text .= $this->drawEdgesLogThinkness();
+    $text .= $this->drawWikiLinksToUsers();
     //here we'll make red links for pages that doesn't exist
-       return $text;
+    return $text;
   }
 
   /**
   * \brief print usernames as links. Make links red if page doesn't exist
    */
-  private function printWikiLinksToUsers() {
+  private function drawWikiLinksToUsers() {
     $text = '';
     reset($this->changesForUsersForPage);
     $editors = array_unique(array_keys($this->changesForUsersForPage));
@@ -92,6 +85,19 @@ class GraphVizDrawer extends AbstractDrawer{
       if (!$title->exists()) {
 	$text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] ;' . " \n"  ;
       }
+    }
+    return $text;
+  }
+
+ /*!
+   * \brief draw the edges with various thickness. Thickness is evaluated with getNorm()
+   */
+  private function drawEdgesLogThinkness() {
+    $text='';
+    while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
+    {
+      $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $this->thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
+
     }
     return $text;
 
