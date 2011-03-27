@@ -22,6 +22,8 @@ function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
 	return true;
 }
+
+
 interface CDDrawer { 
   public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle);
   public function draw();
@@ -286,16 +288,19 @@ function drawDiagram($settings, $parser, $frame) {
   $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   return $text;
 }
-class CollaborationDiagramSettings {
-}
+
 /*!
  * \brief here is an old generation function. I'm refactoring it now
  * XXX
  */
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
+  require_once('CDParameters.php');
+
   global $wgRequest, $wgCollaborationDiagramSkinFilename, $wgOut;
   $settings = array();
+
+  CDParameters::getInstance()->setup($args); //not used yet
 
   $settings['pagesList'] = array();
   if (!isset($args["page"])&&!isset($args['category']))
