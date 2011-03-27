@@ -23,46 +23,62 @@ function efSampleParserInit( &$parser ) {
 	return true;
 }
 interface Drawer { 
-  public function draw($changesForUsers, $sumEditing, $thisPageTitle);
+  public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle);
+  public function draw();
 }
-// class DrawerFactory
-// {
-//   public static function getDrawer() {
-//     global $wgCollaborationDiagramDiagramType;
-//
-//     switch($wgCollaborationDiagramDiagramType) {
-//       case 'pie':
-//         return new PieDrawer();
-//       case 'graphviz-thickness':
-//         return new GraphVizDrawer();
-//       case 'graphviz-figures':
-//         return new FiguresDrawer();
-//     }
-//
-//   }
-// }
+
+abstract class AbstractDrawer implements Drawer {
+  protected $changesForUsersForPage;
+  protected $sumEditing;
+  protected $thisPageTitle;
+
+  public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle) {
+    $this->changesForUsersForPage = $changesForUsersForPage;
+    $this->sumEditing=$sumEditing;
+    $this->thisPageTitle=$thisPageTitle;
+  }
+}
+
+
+class DrawerFactory
+{
+  public static function getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle) {
+    global $wgCollaborationDiagramDiagramType;
+
+    switch($wgCollaborationDiagramDiagramType) {
+      case 'pie':
+        return new PieDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+      case 'graphviz-thickness':
+        return new GraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+      case 'graphviz-figures':
+        return new FiguresDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+      default :
+      	return new GraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    }
+
+  }
+}
 
 /*
    Это лажовый класс. Рисовальщик должен быть всего графа, а этот класс рисует только мясо
  
  */
-class GraphVizDrawer implements Drawer {
-
+class GraphVizDrawer extends AbstractDrawer{
 
   /*!
    * \brief generates graphviz text for all Users with thickness evaluated with getNorm()
    */
-  public function draw($changesForUsers,  $sumEditing, $thisPageTitle)
+  public function draw()
   {
     $text = "";
-    while (list($editorName,$numEditing)=each($changesForUsers))
+    while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
-      $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $sumEditing,22) . " label=".$numEditing ."]" . " ;";
+      $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $this->thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
 
     }
     //here we'll make red links for pages that doesn't exist
-    reset($changesForUsers);
-    $editors = array_unique(array_keys($changesForUsers));
+    reset($this->changesForUsersForPage);
+    $editors = array_unique(array_keys($this->changesForUsersForPage));
     while (list($key,$editorName)=each($editors)) { 
       $title = Title::newFromText( "User:$editorName" );
       if (!$title->exists()) {
@@ -78,20 +94,20 @@ class GraphVizDrawer implements Drawer {
 
 }
 
-class PieDrawer implements Drawer {
-  public function draw($changesForUsers,  $sumEditing, $thisPageTitle)
+class PieDrawer extends AbstractDrawer{
+  public function draw()
   {
     $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
     $text .= 'chd=t:';
-    while (list($editorName,$numEditing)=each($changesForUsers))
+    while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
       $text .= $numEditing . ","  ;  
     }
     $text = substr_replace($text, '',-1);
     $text .= '&';
     $text .= 'chl=';
-    reset($changesForUsers);
-    while (list($editorName,$numEditing)=each($changesForUsers))
+    reset($this->changesForUsersForPage);
+    while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
       $text .=$editorName . "|" ;
     }
@@ -102,8 +118,9 @@ class PieDrawer implements Drawer {
   }
 }
 
-class FiguresDrawer implements Drawer {
-  public function draw($changesForUsers,  $sumEditing, $thisPageTitle) {
+class FiguresDrawer extends AbstractDrawer {
+  public function draw() {
+    return '';
   }
 
 }
@@ -245,12 +262,10 @@ function drawDiagram($settings, $parser, $frame) {
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
 
   }
-  $drawer = new GraphVizDrawer();
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
-//    $sumEditing = evaluateCountOfAllEdits($changesForUsers);
-    
-    $text.=$drawer->draw($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    $drawer = DrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    $text.=$drawer->draw();
   }
    $text.= "</graphviz>";
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
