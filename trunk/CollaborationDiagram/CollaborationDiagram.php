@@ -246,20 +246,7 @@ function evaluateCountOfAllEdits($changesForUsers)
 
 function drawDiagram($settings, $parser, $frame) {
   global $wgTitle;
-  $text = "<graphviz>";
-  if (!is_file( dirname( __FILE__). "/" . $settings['skin']))
-  {
-    $text .= 'digraph W {
-	rankdir = LR ;
-	node [URL="' . 'ERROR' . '?title=\N"] ;
-	node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
-
-  }
-  else
-  {
-    $text .= file_get_contents(dirname( __FILE__). "/" . $settings['skin']);
-    $text .= "\n". 'node [URL="' . $_SERVER['SCRIPT_NAME'] . '?title=\N"] ;' . "\n";
-  }  
+ 
 
   $changesForUsers = array();
   $sumEditing=0;
@@ -273,7 +260,21 @@ function drawDiagram($settings, $parser, $frame) {
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
 
   }
-  foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
+
+  $text = "<graphviz>";
+  if (!is_file( dirname( __FILE__). "/" . $settings['skin']))
+  {
+    $text .= 'digraph W {
+	rankdir = LR ;
+	node [URL="' . 'ERROR' . '?title=\N"] ;
+	node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
+
+  }
+  else
+  {
+    $text .= file_get_contents(dirname( __FILE__). "/" . $settings['skin']);
+    $text .= "\n". 'node [URL="' . $_SERVER['SCRIPT_NAME'] . '?title=\N"] ;' . "\n";
+  }   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
     $drawer = DrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
     $text.=$drawer->draw();
