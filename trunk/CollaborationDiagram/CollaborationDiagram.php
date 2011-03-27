@@ -22,12 +22,12 @@ function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
 	return true;
 }
-interface Drawer { 
+interface CDDrawer { 
   public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle);
   public function draw();
 }
 
-abstract class AbstractDrawer implements Drawer {
+abstract class CDAbstractDrawer implements CDDrawer {
   protected $changesForUsersForPage;
   protected $sumEditing;
   protected $thisPageTitle;
@@ -40,20 +40,20 @@ abstract class AbstractDrawer implements Drawer {
 }
 
 
-class DrawerFactory
+class CDDrawerFactory
 {
   public static function getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle) {
     global $wgCollaborationDiagramDiagramType;
 
     switch($wgCollaborationDiagramDiagramType) {
       case 'pie':
-        return new PieDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+        return new CDPieDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
       case 'graphviz-thickness':
-        return new GraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+        return new CDGraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
       case 'graphviz-figures':
-        return new FiguresDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+        return new CDFiguresDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
       default :
-      	return new GraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+      	return new CDGraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
     }
 
   }
@@ -63,7 +63,7 @@ class DrawerFactory
    Это лажовый класс. Рисовальщик должен быть всего графа, а этот класс рисует только мясо
  
  */
-class GraphVizDrawer extends AbstractDrawer{
+class CDGraphVizDrawer extends CDAbstractDrawer{
 
    public function draw() {
     $text ='';
@@ -105,7 +105,7 @@ class GraphVizDrawer extends AbstractDrawer{
 
 }
 
-class PieDrawer extends AbstractDrawer{
+class CDPieDrawer extends CDAbstractDrawer{
   public function draw()
   {
     $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
@@ -129,7 +129,7 @@ class PieDrawer extends AbstractDrawer{
   }
 }
 
-class FiguresDrawer extends AbstractDrawer {
+class CDFiguresDrawer extends CDAbstractDrawer {
   public function draw() {
     return '';
   }
@@ -276,7 +276,7 @@ function drawDiagram($settings, $parser, $frame) {
  
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
-    $drawer = DrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    $drawer = CDDrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
     $text.=$drawer->draw();
   }
    $text.= "</graphviz>";
@@ -286,7 +286,8 @@ function drawDiagram($settings, $parser, $frame) {
   $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   return $text;
 }
-
+class CollaborationDiagramSettings {
+}
 /*!
  * \brief here is an old generation function. I'm refactoring it now
  * XXX
