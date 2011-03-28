@@ -17,6 +17,8 @@ EOT;
 );
 
 $wgHooks['ParserFirstCallInit'][] = 'efSampleParserInit';
+
+require_once('CDParameters.php');
  
 function efSampleParserInit( &$parser ) {
   $parser->setHook( 'collaborationdia', 'efRenderCollaborationDiagram' );
@@ -187,31 +189,7 @@ function getPageEditorsFromDb($thisPageTitle)
   return $res;
 }
 
-function getCategoryPagesFromDb($categoryName)
-{
-  global $wgDBprefix;
-  //and go!
-  $dbr =& wfGetDB( DB_SLAVE );
-  $tbl_categoryLinks = $wgDBprefix.'categorylinks';
-  $pageTable = $wgDBprefix.'page';
-  $categoryName = mysql_real_escape_string($categoryName);
-  $sql = "
-    SELECT
-    page_title
-    from $tbl_categoryLinks 
-    LEFT JOIN $pageTable on $tbl_categoryLinks.cl_from=$pageTable.page_id
-    WHERE cl_to=\"$categoryName\";
-  ";
-  $res = $dbr->query($sql);
 
-  $result = array();
-  //formatting output array of names:
-  foreach ($res as $row)
-  {
-    array_push($result, $row->page_title);
-  }
-  return $result;
-}
 
 /*!
  * \brief Function that evaluate hom much time each user edited the page
@@ -241,9 +219,9 @@ function evaluateCountOfAllEdits($changesForUsers) {
   return $sumEditing;
 }
 
-function drawPreamble($settings) {
+function drawPreamble() {
   $text = "<graphviz>";
-  if (!is_file( dirname( __FILE__). "/" . $settings['skin'])) {
+  if (!is_file( dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin())) {
     $text .= 'digraph W {
       rankdir = LR ;
       node [URL="' . 'ERROR' . '?title=\N"] ;
@@ -251,19 +229,19 @@ function drawPreamble($settings) {
 
     }
     else {
-      $text .= file_get_contents(dirname( __FILE__). "/" . $settings['skin']);
+      $text .= file_get_contents(dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin());
       $text .= "\n". 'node [URL="' . $_SERVER['SCRIPT_NAME'] . '?title=\N"] ;' . "\n";
     } 
     return $text;
 }
 
-function drawDiagram($settings, $parser, $frame) {
+function drawDiagram($parser, $frame) {
   global $wgTitle;
  
 
   $changesForUsers = array();
   $sumEditing=0;
-  foreach ($settings['pagesList'] as $thisPageTitle )
+  foreach (CDParameters::getInstance()->getPagesList() as $thisPageTitle )
   {
     $names = getPageEditorsFromDb($thisPageTitle);
 
@@ -274,7 +252,7 @@ function drawDiagram($settings, $parser, $frame) {
 
   }
 
-  $text = drawPreamble($settings);
+  $text = drawPreamble();
  
   foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
   {
@@ -295,48 +273,13 @@ function drawDiagram($settings, $parser, $frame) {
  */
 function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
 {
-  require_once('CDParameters.php');
 
-  global $wgRequest, $wgCollaborationDiagramSkinFilename, $wgOut;
-  $settings = array();
 
   CDParameters::getInstance()->setup($args); //not used yet
 
-  $settings['pagesList'] = array();
-  if (!isset($args["page"])&&!isset($args['category']))
-  {
-    $settings['pagesList'] = array($wgRequest->getText('title'));
-  }
-  
-  if  (isset($args["page"]))
-  {
-    $settings['pagesList'] = explode(";",$args["page"]);
-  }
-
-  if (isset($args["category"]))
-  {
-    $pagesFromCategory = array();
-    $pagesFromCategory = getCategoryPagesFromDb($args["category"]);
-    $settings['pagesList'] = array_merge($settings['pagesList'], $pagesFromCategory) ;
-    $settings['category']=$args['category'];//XXX
-  }
-  
-  $settings['skin'] = 'default.dot';
-  if (isset($wgCollaborationDiagramSkinFilename))
-  {
-    $settings['skin'] = $wgCollaborationDiagramSkinFilename;
-  }
-  
-  $settings['diagramType'] = 'dot';
-  if (isset($args['type']))
-  {
-   $settings['diagramType']= $args['type'];
-  }
-
-  return drawDiagram($settings, $parser,$frame);
+  return drawDiagram($parser,$frame);
 }
 
-$wgHooks['SkinTemplateContentActions'][] = 'showCollaborationDiagramTab';
 $wgHooks['SkinTemplateTabs'][] = 'showCollaborationDiagramTab';
 $wgHooks['SkinTemplateNavigation'][] = 'showCollaborationDiagramTabInVector';
 /*!
@@ -380,8 +323,5 @@ function showCollaborationDiagramTabInVector( $obj, &$links )
   showCollaborationDiagramTab( $obj, $views_links );
   $links['views'] = $views_links;
   return true;
-
-
-
 }
 include_once("SpecialCollaborationDiagram.php");
