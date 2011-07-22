@@ -259,7 +259,7 @@ function drawDiagram($parser, $frame) {
     $drawer = CDDrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
     $text.=$drawer->draw();
   }
-   $text.= "</graphviz>";
+   $text.= "}</graphviz>";
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
 
   $parser->disableCache();
