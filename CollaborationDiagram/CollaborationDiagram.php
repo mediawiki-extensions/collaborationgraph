@@ -81,14 +81,24 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
   * \brief print usernames as links. Make links red if page doesn't exist
    */
   private function drawWikiLinksToUsers() {
+    global $wgCollDiaUseSocProfilePicture;
     $text = '';
     reset($this->changesForUsersForPage);
     $editors = array_unique(array_keys($this->changesForUsersForPage));
-    while (list($key,$editorName)=each($editors)) { 
+    while (list($key,$editorName)=each($editors)) {
       $title = Title::newFromText( "User:$editorName" );
+      //red links for authors with empty pages
+
       if (!$title->exists()) {
-	$text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] ;' . " \n"  ;
+	    $text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] '   ;
       }
+      else {
+          $text.="\n" . '"User:' . $editorName . '"' ;
+      }
+      if ($wgCollDiaUseSocProfilePicture==true) {
+          $text .= $this->printGuyPicture($editorName);
+      }
+      $text .= "; \n";
     }
     return $text;
   }
@@ -100,12 +110,25 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     $text='';
     while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
-      $text.= "\n" . '"User:' . mysql_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_escape_string( $this->thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
+      $text.= "\n" . '"User:' . mysql_real_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_real_escape_string( $this->thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
 
     }
     return $text;
 
   }
+
+    private function printGuyPicture($editorName)
+    {
+        $user = User::newFromName($editorName);
+        if ($user==false) {
+            return '';
+        }
+        else {
+            global $IP;
+            $avatar = new wAvatar( $user->getId(), 'l' );
+                return " [image=\"$IP/images/avatars/" . $avatar->getAvatarImage() .'"]';
+        }
+    }
 
 }
 
@@ -180,6 +203,7 @@ function getPageEditorsFromDb($thisPageTitle)
  // echo ($thisPageTitle); // почему  то тут для хлеба выводятия Диаграмма соучастяи а не хлеб
   $sql = sprintf("SELECT rev_user_text  FROM $tbl_pag  INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page  WHERE page_title=\"%s\";  ", mysql_escape_string($thisPageTitle));
 
+  $rawUsers = array();
   $rawUsers = $dbr->query($sql);
   $res=array();
   foreach ($rawUsers as $row)
@@ -295,7 +319,6 @@ function showCollaborationDiagramTab( $obj , &$content_actions  )
   {
     wfLoadExtensionMessages('CollaborationDiagram');
     
-    require_once("Title.php");
     $content_actions['CollaborationDiagram'] = array(
       'class' => false,
       'text' => wfMsgForContent('tabcollaboration'),
