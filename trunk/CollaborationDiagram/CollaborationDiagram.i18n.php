@@ -15,5 +15,16 @@ $messages['ru'] = array(
       'tabcollaboration' => 'Авторы',
     );
 
+$messages['fr'] = array(
+      'collaborationdiagram' => 'Diagramme de collaboration',
+      'collaborationdiagram-desc' => "Afficher le graphe de collaboration",
+      'tabcollaboration' => 'Auteurs',
+    );
+
+$messages['de'] = array(
+      'collaborationdiagram' => 'Kooperationsdiagramm',
+      'collaborationdiagram-desc' => "Kooperationsdiagramm anzeigen",
+      'tabcollaboration' => 'Autoren',
+    );
 
 
