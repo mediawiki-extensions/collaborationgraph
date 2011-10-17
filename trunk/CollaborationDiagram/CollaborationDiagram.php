@@ -27,7 +27,7 @@ function efSampleParserInit( &$parser ) {
 
 
 interface CDDrawer { 
-  public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle);
+  public function __construct($changesForUsersForPage, $sumEditing,  $thisPageTitle);
   public function draw();
 }
 
@@ -36,17 +36,18 @@ abstract class CDAbstractDrawer implements CDDrawer {
   protected $sumEditing;
   protected $thisPageTitle;
 
-  public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle) {
+  public function __construct($changesForUsersForPage, $sumEditing,  $thisPageTitle) {
     $this->changesForUsersForPage = $changesForUsersForPage;
     $this->sumEditing=$sumEditing;
     $this->thisPageTitle=$thisPageTitle;
+
   }
 }
 
 
 class CDDrawerFactory
 {
-  public static function getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle) {
+  public static function getDrawer($changesForUsersForPage, $sumEditing,  $thisPageTitle) {
     global $wgCollaborationDiagramDiagramType;
 
     switch($wgCollaborationDiagramDiagramType) {
@@ -71,6 +72,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
 
    public function draw() {
     $text ='';
+
     $text .= $this->drawEdgesLogThinkness();
     $text .= $this->drawWikiLinksToUsers();
     //here we'll make red links for pages that doesn't exist
@@ -79,6 +81,10 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
 
   /**
   * \brief print usernames as links. Make links red if page doesn't exist
+   *
+   * If global configuration variable $wgCollDiaUseSocProfilePicture set to true
+   * the method will also generate paths to the avatars of users.
+   * @return string description of nodes, strings like User:ganqqwerty [parameters]
    */
   private function drawWikiLinksToUsers() {
     global $wgCollDiaUseSocProfilePicture;
@@ -108,15 +114,24 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
    */
   private function drawEdgesLogThinkness() {
     $text='';
+
+
     while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
-      $text.= "\n" . '"User:' . mysql_real_escape_string($editorName) . '"' . ' -> ' . '"' .mysql_real_escape_string( $this->thisPageTitle ). '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
 
+      $text.= "\n" . '"User:' . mysql_real_escape_string($editorName) . '"' . ' -> ' . '"' . $this->thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
     }
     return $text;
-
   }
 
+    /**
+     * search for avatar of the username $editorName.
+     *
+     * If the avatar is in jpg and the option $wgCollaborationDiagramConvertToPNG set to true then
+     * all avatars that are not in PNG will be converted to PNG with ImageMagick program set in $wgImageMagickConvertCommand variable
+     * @param  $editorName
+     * @return string
+     */
     private function printGuyPicture($editorName)
     {
         $user = User::newFromName($editorName);
@@ -124,9 +139,15 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
             return '';
         }
         else {
-            global $IP;
+            global $IP, $wgCollaborationDiagramConvertToPNG, $wgImageMagickConvertCommand, $wgUseImageMagick;
             $avatar = new wAvatar( $user->getId(), 'l' );
-                return " [image=\"$IP/images/avatars/" . $avatar->getAvatarImage() .'"]';
+            $tmpArr = explode ('?r=',$avatar->getAvatarImage());
+            $avatarImage = $tmpArr[0];
+            $avatarWithPath = "$IP/images/avatars/$avatarImage";
+            if ($wgCollaborationDiagramConvertToPNG==true && $wgUseImageMagick==true && isset($wgImageMagickConvertCommand)) {
+                exec("$wgImageMagickConvertCommand $avatarWithPath ");
+            }
+               return " [image=\"$avatarWithPath\"]";   
         }
     }
 
@@ -198,13 +219,12 @@ function getPageEditorsFromDb($thisPageTitle)
   global $wgDBprefix;
   $dbr =& wfGetDB( DB_SLAVE );
 
-  $tbl_pag =  $wgDBprefix.'page';
-  $tbl_rev = $wgDBprefix.'revision';
- // echo ($thisPageTitle); // почему  то тут для хлеба выводятия Диаграмма соучастяи а не хлеб
-  $sql = sprintf("SELECT rev_user_text  FROM $tbl_pag  INNER JOIN $tbl_rev on $tbl_pag.page_id=$tbl_rev.rev_page  WHERE page_title=\"%s\";  ", mysql_escape_string($thisPageTitle));
+  $table = array("page", "revision");
+  $vars = array ("rev_user_text", "rev_page");
+  $conds = array( "page_id=\"". $thisPageTitle->getArticleID() . "\"" ,
+                  "page_id=rev_page");
+  $rawUsers = $dbr->select($table,$vars, $conds);
 
-  $rawUsers = array();
-  $rawUsers = $dbr->query($sql);
   $res=array();
   foreach ($rawUsers as $row)
   {
@@ -265,22 +285,24 @@ function drawDiagram($parser, $frame) {
 
   $changesForUsers = array();
   $sumEditing=0;
-  foreach (CDParameters::getInstance()->getPagesList() as $thisPageTitle )
+  $pagesList = CDParameters::getInstance()->getPagesList();
+  $pageWithChanges=array();
+  foreach ($pagesList as $thisPageTitle )
   {
-    $names = getPageEditorsFromDb($thisPageTitle);
+    $names = getPageEditorsFromDb($thisPageTitle);//FIXME тут будут Title-объекты
 
     $changesForUsersForPage = getCountsOfEditing($names);
-    $pageWithChanges[$thisPageTitle]=$changesForUsersForPage;
+    $thisPageTitleKey = $thisPageTitle->getNsText(). ":" . $thisPageTitle->getText(); // we can't use Title object this is a key with an array so we generate the Ns:Name key
+    $pageWithChanges[$thisPageTitleKey]=$changesForUsersForPage;
+
     $changesForUsers = array_merge($changesForUsers, $changesForUsersForPage);
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
-
   }
 
   $text = drawPreamble();
- 
-  foreach ($pageWithChanges as $thisPageTitle=>$changesForUsersForPage)
+  foreach ($pageWithChanges as $thisPageTitleKey=>$changesForUsersForPage)
   {
-    $drawer = CDDrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    $drawer = CDDrawerFactory::getDrawer($changesForUsersForPage, $sumEditing, $thisPageTitleKey);
     $text.=$drawer->draw();
   }
    $text.= "}</graphviz>";
@@ -291,21 +313,15 @@ function drawDiagram($parser, $frame) {
   return $text;
 }
 
-/*!
- * \brief here is an old generation function. I'm refactoring it now
- * XXX
- */
-function efRenderCollaborationDiagram( $input, $args, $parser, $frame ) 
+function efRenderCollaborationDiagram( $input, $args, $parser, $frame )
 {
-
-
   CDParameters::getInstance()->setup($args); //not used yet
-
   return drawDiagram($parser,$frame);
 }
 
 $wgHooks['SkinTemplateTabs'][] = 'showCollaborationDiagramTab';
 $wgHooks['SkinTemplateNavigation'][] = 'showCollaborationDiagramTabInVector';
+
 /*!
  * \brief function that show tab
  * very simple, see this extension : http://www.mediawiki.org/wiki/Extension:Tab0
