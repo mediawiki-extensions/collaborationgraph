@@ -10,39 +10,30 @@ EOT;
 
 function getCategoryPagesFromDb($categoryName)
 {
-  global $wgDBprefix;
-  //and go!
   $dbr =& wfGetDB( DB_SLAVE );
-  $tbl_categoryLinks = $wgDBprefix.'categorylinks';
-  $pageTable = $wgDBprefix.'page';
   $categoryName = mysql_real_escape_string($categoryName);
-  $sql = "
-    SELECT
-    page_title
-    from $tbl_categoryLinks 
-    LEFT JOIN $pageTable on $tbl_categoryLinks.cl_from=$pageTable.page_id
-    WHERE cl_to=\"$categoryName\";
-  ";
-  $res = $dbr->query($sql);
+  $queryResult = $dbr->select("categorylinks","cl_from","cl_to=\"$categoryName\"");
 
   $result = array();
-  //formatting output array of names:
-  foreach ($res as $row)
-  {
-    array_push($result, $row->page_title);
+  while ($row = $queryResult->fetchRow()) {
+      $title = Title::newFromID($row['cl_from']);
+      
+      array_push($result,$title);
   }
-  return $result;
+    return $result;
 }
 
 
 class CDParameters {
   private $skin;
-  private $pagesList;
-  private $category;
+  private $pagesList = array(); //! list of Title objects for pages that collaboration diagram should be shown for
   private $diagramType;
 
   static private $instance = NULL;
-
+/**
+ * @static Singleton pattern function
+ * @return object of CDParameter
+ */
   public static function getInstance() {
     if (self::$instance == NULL) {
       self::$instance = new CDParameters();
@@ -56,25 +47,35 @@ class CDParameters {
   private function __clone() {
   }
 
+  /**
+   * Read the parameters of collaborationdiagram tag and fill the pagesList
+   * @param array $args arguments of the colaborationdia tag. For example in <collaborationdia page="ew" />
+   * the page is an argument.
+   * @return void return tohing
+   */
   public function setup(array $args) {
-    global $wgRequest, $wgCollaborationDiagramSkinFilename, $wgOut;
-    $this->pagesList = array();
-    if (!isset($args["page"])&&!isset($args['category']))
+      //FIXME везде тут в pagesList должен подсовываться объект Title
+    global $wgCollaborationDiagramSkinFilename, $wgTitle;
+    //if user asks for collaborationdia for the current page:
+    if (!isset($args["page"])     &&
+        !isset($args['category']))
     {
-      $this->pagesList = array($wgRequest->getText('title'));
+      $this->pagesList = array($wgTitle);
     }
 
     if  (isset($args["page"]))
     {
-      $this->pagesList = explode(";",$args["page"]);
+      $this->pagesList = array();
+      $pageNames = explode(";",$args["page"]);
+      foreach ($pageNames as $pageName) {
+          array_push($this->pagesList, Title::newFromText($pageName));
+      }
+
     }
 
     if (isset($args["category"]))
     {
-      $pagesFromCategory = array();
-      $pagesFromCategory = getCategoryPagesFromDb($args["category"]);
-      $this->pagesList = array_merge($this->pagesList, $pagesFromCategory) ;
-      $this->category=$args['category'];//XXX
+      $this->pagesList = getCategoryPagesFromDb($args["category"]);//I need to dig here
     }
 
     $this->skin = 'default.dot';
@@ -97,11 +98,9 @@ class CDParameters {
   }
 
   public function getPagesList() {
-    return $this->pagesList;   
+    return $this->pagesList;
   }
-  public function getCategory() {
-    return $this->category;    
-  }
+
   public function getDiagramType() {
     return $this->diagramType; 
   }
