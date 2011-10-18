@@ -186,7 +186,16 @@ class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
             if ($wgCollaborationDiagramConvertToPNG==true && $wgUseImageMagick==true && isset($wgImageMagickConvertCommand)) {
                 exec("$wgImageMagickConvertCommand $avatarWithPath ");
             }
-            return " [image=\"$avatarWithPath\"]";
+            $pictureWithLabel = "[label=<
+<table border=\"0\">
+ <tr>
+  <td><img src=\"$avatarWithPath\" /></td>
+ </tr>
+ <tr>
+  <td>$editorName</td>
+ </tr>
+</table>>]";
+            return $pictureWithLabel;
         }
     }
 }
@@ -330,7 +339,7 @@ function drawDiagram($parser, $frame) {
   $pageWithChanges=array();
   foreach ($pagesList as $thisPageTitle )
   {
-    $names = getPageEditorsFromDb($thisPageTitle);//FIXME тут будут Title-объекты
+    $names = getPageEditorsFromDb($thisPageTitle);
 
     $changesForUsersForPage = getCountsOfEditing($names);
     $thisPageTitleKey = $thisPageTitle->getNsText(). ":" . $thisPageTitle->getText(); // we can't use Title object this is a key with an array so we generate the Ns:Name key
