@@ -279,10 +279,14 @@ function getPageEditorsFromDb($thisPageTitle)
   }
   return $res;
 }
-
+/**
+ * Throws small contributions from the array. The size of small contribution is set via global variable
+ * called $wgCollaborationDiagramMinEdit in LocalSettings.php
+ * @param  $changesForUsers array with pairs USER=>her contribution
+ * @return the same array but filtered
+ */
 function filterTinyEdits($changesForUsers) {
     global $wgCollaborationDiagramMinEdit;
-    echo "GFFFFFFFFFFFFF";
     foreach ($changesForUsers as $key => $val) {
         if ($val<=$wgCollaborationDiagramMinEdit) {
             unset ($changesForUsers[$key]);
