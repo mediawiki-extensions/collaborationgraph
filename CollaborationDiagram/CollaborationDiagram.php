@@ -77,10 +77,8 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
 
    public function draw() {
     $text ='';
-
     $text .= $this->drawWikiLinksToUsers();
     $text .= $this->drawEdgesLogThinkness();
-    //here we'll make red links for pages that doesn't exist
     return $text;
   }
 
@@ -332,20 +330,15 @@ function drawPreamble() {
 function drawDiagram($parser, $frame) {
   global $wgTitle;
  
-
-  $changesForUsers = array();
   $sumEditing=0;
   $pagesList = CDParameters::getInstance()->getPagesList();
   $pageWithChanges=array();
   foreach ($pagesList as $thisPageTitle )
   {
     $names = getPageEditorsFromDb($thisPageTitle);
-
     $changesForUsersForPage = getCountsOfEditing($names);
     $thisPageTitleKey = $thisPageTitle->getNsText(). ":" . $thisPageTitle->getText(); // we can't use Title object this is a key with an array so we generate the Ns:Name key
     $pageWithChanges[$thisPageTitleKey]=$changesForUsersForPage;
-
-    $changesForUsers = array_merge($changesForUsers, $changesForUsersForPage);
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
   }
 
