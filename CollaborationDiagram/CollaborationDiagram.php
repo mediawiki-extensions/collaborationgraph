@@ -48,17 +48,22 @@ abstract class CDAbstractDrawer implements CDDrawer {
 class CDDrawerFactory
 {
   public static function getDrawer($changesForUsersForPage, $sumEditing,  $thisPageTitle) {
-    global $wgCollaborationDiagramDiagramType;
+    global $wgCollaborationDiagramDiagramType, $wgCollDiaUseSocProfilePicture;
 
     switch($wgCollaborationDiagramDiagramType) {
       case 'pie':
         return new CDPieDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
-      case 'graphviz-thickness':
+      case 'graphviz-thickness': {
         return new CDGraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+      }
       case 'graphviz-figures':
         return new CDFiguresDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
-      default :
+      default : {
+          if ($wgCollDiaUseSocProfilePicture) {
+            return new CDSocialProfileGraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+        }
       	return new CDGraphVizDrawer($changesForUsersForPage, $sumEditing, $thisPageTitle);
+      }
     }
 
   }
@@ -81,9 +86,6 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
 
   /**
   * \brief print usernames as links. Make links red if page doesn't exist
-   *
-   * If global configuration variable $wgCollDiaUseSocProfilePicture set to true
-   * the method will also generate paths to the avatars of users.
    * @return string description of nodes, strings like User:ganqqwerty [parameters]
    */
   protected function drawWikiLinksToUsers() {
@@ -94,10 +96,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     $res = '';
     while (list($key,$editorName)=each($editors)) {
         $res .= $this->makeRedOrBlueLink($editorName);
-      if ($wgCollDiaUseSocProfilePicture==true) {
-          $res .= $this->printGuyPicture($editorName);
-      }
-      $res .= "; \n";
+        $res .= "; \n";
     }
     return $res;
   }
@@ -122,13 +121,11 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
         }
     }
 
-    /*!
-    * \brief draw the edges with various thickness. Thickness is evaluated with getNorm()
-    */
+ /**
+  * \brief draw the edges with various thickness. Thickness is evaluated with getNorm()
+  */
   protected function drawEdgesLogThinkness() {
     $text='';
-
-
     while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
       $text.= "\n" . '"User:' . mysql_real_escape_string($editorName) . '"' . ' -> ' . '"' . $this->thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
@@ -136,7 +133,37 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     return $text;
   }
 
-    /**
+
+
+}
+
+/**
+ * A class for drawing graphviz  diagrams using the date from Extension:SocialProfile
+ * There is an avatar of user instead of just username
+ * This class inherits and uses many of the functions of the CDGraphvizDrawer, e.g. draw()
+ */
+class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
+    public function __construct($changesForUsersForPage, $sumEditing, $thisPageTitle) {
+        parent::__construct($changesForUsersForPage, $sumEditing, $thisPageTitle);
+    }
+  /**
+  * \brief print usernames as links. Make links red if page doesn't exist
+   * This method will also generate paths to the avatars of users.
+   * @return string description of nodes, strings like User:ganqqwerty [parameters]
+   */
+    protected function drawWikiLinksToUsers() {
+        reset($this->changesForUsersForPage);
+        $editors = array_unique(array_keys($this->changesForUsersForPage));
+        $res = '';
+        while (list($key,$editorName)=each($editors)) {
+            $res .= $this->makeRedOrBlueLink($editorName);
+            $res .= $this->printGuyPicture($editorName);
+            $res .= "; \n";
+        }
+        return $res;
+    }
+
+   /**
      * search for avatar of the username $editorName.
      *
      * If the avatar is in jpg and the option $wgCollaborationDiagramConvertToPNG set to true then
@@ -144,7 +171,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
      * @param  $editorName
      * @return string
      */
-    protected function printGuyPicture($editorName)
+    private function printGuyPicture($editorName)
     {
         $user = User::newFromName($editorName);
         if ($user==false) {
@@ -162,26 +189,6 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
             return " [image=\"$avatarWithPath\"]";
         }
     }
-
-}
-
-
-class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
-    protected function drawWikiLinksToUsers(){
-    global $wgCollDiaUseSocProfilePicture;
-    $text = '';
-    reset($this->changesForUsersForPage);
-    $editors = array_unique(array_keys($this->changesForUsersForPage));
-    while (list($key,$editorName)=each($editors)) {
-        $text = $this->makeRedOrBlueLink($editorName);
-      if ($wgCollDiaUseSocProfilePicture==true) {
-          $text .= $this->printGuyPicture($editorName);
-      }
-      $text .= "; \n";
-    }
-    return $text;
-  }
-
 }
 
 
