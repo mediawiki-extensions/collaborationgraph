@@ -280,15 +280,23 @@ function getPageEditorsFromDb($thisPageTitle)
   return $res;
 }
 
-
+function filterTinyEdits($changesForUsers) {
+    global $wgCollaborationDiagramMinEdit;
+    echo "GFFFFFFFFFFFFF";
+    foreach ($changesForUsers as $key => $val) {
+        if ($val<=$wgCollaborationDiagramMinEdit) {
+            unset ($changesForUsers[$key]);
+        }
+    }
+    return $changesForUsers;
+}
 
 /*!
  * \brief Function that evaluate hom much time each user edited the page
  * \return array : username -> how much time edited
  */
-function getCountsOfEditing($names)
-{
- 
+function getCountsOfEditing($names) {
+  global $wgCollaborationDiagramMinEdit;
   $changesForUsers = array();//an array where we'll store how much time each user edited the page
   foreach ($names as $curName)
   {
@@ -296,6 +304,9 @@ function getCountsOfEditing($names)
       $changesForUsers[$curName]=1;
     else
       $changesForUsers[$curName]++;
+  }
+  if (isset($wgCollaborationDiagramMinEdit)) {
+      $changesForUsers = filterTinyEdits($changesForUsers);
   }
   return $changesForUsers;
 }
