@@ -73,8 +73,8 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
    public function draw() {
     $text ='';
 
-    $text .= $this->drawEdgesLogThinkness();
     $text .= $this->drawWikiLinksToUsers();
+    $text .= $this->drawEdgesLogThinkness();
     //here we'll make red links for pages that doesn't exist
     return $text;
   }
@@ -86,39 +86,51 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
    * the method will also generate paths to the avatars of users.
    * @return string description of nodes, strings like User:ganqqwerty [parameters]
    */
-  private function drawWikiLinksToUsers() {
+  protected function drawWikiLinksToUsers() {
     global $wgCollDiaUseSocProfilePicture;
-    $text = '';
+
     reset($this->changesForUsersForPage);
     $editors = array_unique(array_keys($this->changesForUsersForPage));
+    $res = '';
     while (list($key,$editorName)=each($editors)) {
-      $title = Title::newFromText( "User:$editorName" );
-      //red links for authors with empty pages
-
-      if (!$title->exists()) {
-	    $text .="\n" . '"User:' . $editorName . '"' . '[fontcolor="#BA0000"] '   ;
-      }
-      else {
-          $text.="\n" . '"User:' . $editorName . '"' ;
-      }
+        $res .= $this->makeRedOrBlueLink($editorName);
       if ($wgCollDiaUseSocProfilePicture==true) {
-          $text .= $this->printGuyPicture($editorName);
+          $res .= $this->printGuyPicture($editorName);
       }
-      $text .= "; \n";
+      $res .= "; \n";
     }
-    return $text;
+    return $res;
   }
 
- /*!
-   * \brief draw the edges with various thickness. Thickness is evaluated with getNorm()
-   */
-  private function drawEdgesLogThinkness() {
+    /**
+     * If the home page of the editor exists forms the blue link, otherwise the link will be red
+     * @param  $editorName editor name without the User: prefix
+     * @return string returns the red or blue link to the editor's page
+     */
+    protected function makeRedOrBlueLink($editorName) {
+        $text = '';
+        $title = Title::newFromText("User:$editorName");
+        //red links for authors with empty pages
+
+        if (!$title->exists()) {
+            $text .= "\n" . '"User:' . $editorName . '"' . "[fontcolor=\"#BA0000\", tooltip=\"$editorName\" ]  ";
+            return $text;
+        }
+        else {
+            $text .= "\n" . '"User:' . $editorName . '"' . "[tooltip=\"$editorName\"]";
+            return $text;
+        }
+    }
+
+    /*!
+    * \brief draw the edges with various thickness. Thickness is evaluated with getNorm()
+    */
+  protected function drawEdgesLogThinkness() {
     $text='';
 
 
     while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
-
       $text.= "\n" . '"User:' . mysql_real_escape_string($editorName) . '"' . ' -> ' . '"' . $this->thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
     }
     return $text;
@@ -132,7 +144,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
      * @param  $editorName
      * @return string
      */
-    private function printGuyPicture($editorName)
+    protected function printGuyPicture($editorName)
     {
         $user = User::newFromName($editorName);
         if ($user==false) {
@@ -147,13 +159,34 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
             if ($wgCollaborationDiagramConvertToPNG==true && $wgUseImageMagick==true && isset($wgImageMagickConvertCommand)) {
                 exec("$wgImageMagickConvertCommand $avatarWithPath ");
             }
-               return " [image=\"$avatarWithPath\"]";   
+            return " [image=\"$avatarWithPath\"]";
         }
     }
 
 }
 
-class CDPieDrawer extends CDAbstractDrawer{
+
+class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
+    protected function drawWikiLinksToUsers(){
+    global $wgCollDiaUseSocProfilePicture;
+    $text = '';
+    reset($this->changesForUsersForPage);
+    $editors = array_unique(array_keys($this->changesForUsersForPage));
+    while (list($key,$editorName)=each($editors)) {
+        $text = $this->makeRedOrBlueLink($editorName);
+      if ($wgCollDiaUseSocProfilePicture==true) {
+          $text .= $this->printGuyPicture($editorName);
+      }
+      $text .= "; \n";
+    }
+    return $text;
+  }
+
+}
+
+
+
+class CDPieDrawer extends CDAbstractDrawer {
   public function draw()
   {
     $text = '<img src="http://chart.apis.google.com/chart?cht=p3&chs=750x300&';
@@ -264,12 +297,13 @@ function evaluateCountOfAllEdits($changesForUsers) {
 }
 
 function drawPreamble() {
-  $text = "<graphviz>";
+//  $text = "<pre>";
+  $text .= "<graphviz>\n";
   if (!is_file( dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin())) {
     $text .= 'digraph W {
       rankdir = LR ;
       node [URL="' . 'ERROR' . '?title=\N"] ;
-      node [fontsize=9, fontcolor="blue", shape="none", style=""] ;' ;
+      node [fontsize=9, fontcolor="blue", shape="plaintext", style=""] ;' ;
 
     }
     else {
