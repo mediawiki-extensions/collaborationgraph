@@ -93,12 +93,27 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     $editors = array_unique(array_keys($this->changesForUsersForPage));
     $res = '';
     while (list($key,$editorName)=each($editors)) {
+        $res .= $this->drawUserNode ($editorName);
+        $res .= $this->drawTooltip($editorName);
         $res .= $this->makeRedOrBlueLink($editorName);
         $res .= "; \n";
     }
     return $res;
   }
 
+    /**
+     * Draw only the identifier of a user
+     * @param  $editorName: the name of user
+     * @return string like "User:qwerty"
+     */
+    protected function drawUserNode ($editorName) {
+        return  "\n\"User:$editorName\" ";
+
+    }
+
+    protected function drawTooltip($editorName) {
+        return $this->drawUserNode($editorName) . "[tooltip=\"$editorName\"] ;";
+    }
     /**
      * If the home page of the editor exists forms the blue link, otherwise the link will be red
      * @param  $editorName editor name without the User: prefix
@@ -107,16 +122,11 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     protected function makeRedOrBlueLink($editorName) {
         $text = '';
         $title = Title::newFromText("User:$editorName");
-        //red links for authors with empty pages
-
         if (!$title->exists()) {
-            $text .= "\n" . '"User:' . $editorName . '"' . "[fontcolor=\"#BA0000\", tooltip=\"$editorName\" ]  ";
+            $text .= $this->drawUserNode($editorName) . "[fontcolor=\"#BA0000\"];";
             return $text;
         }
-        else {
-            $text .= "\n" . '"User:' . $editorName . '"' . "[tooltip=\"$editorName\"]";
-            return $text;
-        }
+        return $text;
     }
 
  /**
@@ -126,7 +136,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     $text='';
     while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
-      $text.= "\n" . '"User:' . mysql_real_escape_string($editorName) . '"' . ' -> ' . '"' . $this->thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
+      $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $this->thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
     }
     return $text;
   }
@@ -154,9 +164,10 @@ class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
         $editors = array_unique(array_keys($this->changesForUsersForPage));
         $res = '';
         while (list($key,$editorName)=each($editors)) {
+            $res .= $this->drawUserNode ($editorName);
+            $res .= $this->drawTooltip($editorName);
             $res .= $this->makeRedOrBlueLink($editorName);
             $res .= $this->printGuyPicture($editorName);
-            $res .= "; \n";
         }
         return $res;
     }
@@ -193,7 +204,7 @@ class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
   <td>$editorName</td>
  </tr>
 </table>>]";
-            return $pictureWithLabel;
+            return $this->drawUserNode($editorName) . $pictureWithLabel;
         }
     }
 }
@@ -224,9 +235,25 @@ class CDPieDrawer extends CDAbstractDrawer {
   }
 }
 
-class CDFiguresDrawer extends CDAbstractDrawer {
-  public function draw() {
-    return '';
+class CDFiguresDrawer extends CDGraphVizDrawer {
+  public function drawWikiLinksToUsers() {
+      reset($this->changesForUsersForPage);
+      $editors = array_unique(array_keys($this->changesForUsersForPage));
+      $res = '';
+      while (list($key,$editorName)=each($editors)) {
+          $res .= $this->drawTooltip($editorName);
+          $res .= $this->drawUserIcon($editorName);
+          $res .= "; \n";
+      }
+      return $res;
+  }
+  private function drawUserIcon($editorName) {
+      global $wgCollaborationDiagramUserIcon, $IP;
+      if (!isset($wgCollaborationDiagramUserIcon)) {
+          $wgCollaborationDiagramUserIcon = "$IP/extensions/CollaborationDiagram/user_icon.png";
+      }
+      return $this->drawUserNode($editorName) . "[label =\"\", image=\"$wgCollaborationDiagramUserIcon\" ];";
+
   }
 
 }
