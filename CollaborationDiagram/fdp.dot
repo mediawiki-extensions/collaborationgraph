@@ -1,0 +1,4 @@
+digraph W {
+  layout = "fdp";
+  node[fontsize="10", fontcolor="blue", nodesep=2, shape="none", style=""] ;
+  edge [arrowhead=normal, arrowsize=0.4,len=2.5];
