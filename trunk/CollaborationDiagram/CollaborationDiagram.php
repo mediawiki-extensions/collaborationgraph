@@ -95,7 +95,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     while (list($key,$editorName)=each($editors)) {
         $res .= $this->drawUserNode ($editorName);
         $res .= $this->drawTooltip($editorName);
-        $res .= $this->makeRedOrBlueLink($editorName);
+        $res .= $this->drawRedLink($editorName);
         $res .= "; \n";
     }
     return $res;
@@ -119,7 +119,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
      * @param  $editorName editor name without the User: prefix
      * @return string returns the red or blue link to the editor's page
      */
-    protected function makeRedOrBlueLink($editorName) {
+    protected function drawRedLink($editorName) {
         $text = '';
         $title = Title::newFromText("User:$editorName");
         if (!$title->exists()) {
@@ -166,7 +166,7 @@ class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
         while (list($key,$editorName)=each($editors)) {
             $res .= $this->drawUserNode ($editorName);
             $res .= $this->drawTooltip($editorName);
-            $res .= $this->makeRedOrBlueLink($editorName);
+            $res .= $this->drawRedLink($editorName);
             $res .= $this->printGuyPicture($editorName);
         }
         return $res;
@@ -193,7 +193,8 @@ class CDSocialProfileGraphVizDrawer extends CDGraphVizDrawer {
             $avatarImage = $tmpArr[0];
             $avatarWithPath = "$IP/images/avatars/$avatarImage";
             if ($wgCollaborationDiagramConvertToPNG==true && $wgUseImageMagick==true && isset($wgImageMagickConvertCommand)) {
-                exec("$wgImageMagickConvertCommand $avatarWithPath ");
+                exec($wgImageMagickConvertCommand . " " . $avatarWithPath . " " . substr_replace($avatarWithPath, 'png',-3)); ///probably code injection possible here!!!
+                $avatarWithPath = substr_replace($avatarWithPath,'png',-3);
             }
             $pictureWithLabel = "[label=<
 <table border=\"0\">
