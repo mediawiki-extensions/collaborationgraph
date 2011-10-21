@@ -244,7 +244,6 @@ class CDFiguresDrawer extends CDGraphVizDrawer {
       while (list($key,$editorName)=each($editors)) {
           $res .= $this->drawTooltip($editorName);
           $res .= $this->drawUserIcon($editorName);
-          $res .= "; \n";
       }
       return $res;
   }
@@ -253,7 +252,7 @@ class CDFiguresDrawer extends CDGraphVizDrawer {
       if (!isset($wgCollaborationDiagramUserIcon)) {
           $wgCollaborationDiagramUserIcon = "$IP/extensions/CollaborationDiagram/user_icon.png";
       }
-      return $this->drawUserNode($editorName) . "[label =\"\", image=\"$wgCollaborationDiagramUserIcon\" ];";
+      return $this->drawUserNode($editorName) . "[label =\"\", image=\"$wgCollaborationDiagramUserIcon\" ];\n";
 
   }
 
