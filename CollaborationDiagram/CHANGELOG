@@ -1,0 +1,17 @@
+This is a changelog for Collaboration diagram versions. The last version is on the top.
+
+###################################################################
+=== Version 0.2 ===
+Lots of new features here. In this version I've added some new views and skins, fixed a lot of bugs and made the diagram
+hopefully much prettier. The very notable new feature is optional dependency from SocialProfile extension.
+====New features====
+* new views: compact view with only icons of articles and people and SocialProfile view with big shiny avatars.
+* new graphviz skins for newbies in graphviz: circular, vertical and more.
+* new configuration variables
+* support Vector wikis
+* namespace support
+* support wikis with prefixes in table names
+
+###################################################################
+=== Version 0.1 ===
+The first experimental version that works pretty often.  Supports skins but nobody cares.
