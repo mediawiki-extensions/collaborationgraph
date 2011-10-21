@@ -355,7 +355,8 @@ function evaluateCountOfAllEdits($changesForUsers) {
 
 function drawPreamble() {
 //  $text = "<pre>";
-  $text .= "<graphviz>\n";
+    $text = "";
+    $text .= "<graphviz>\n";
   if (!is_file( dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin())) {
     $text .= 'digraph W {
       rankdir = LR ;
