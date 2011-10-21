@@ -380,7 +380,12 @@ function drawDiagram($parser, $frame) {
   {
     $names = getPageEditorsFromDb($thisPageTitle);
     $changesForUsersForPage = getCountsOfEditing($names);
-    $thisPageTitleKey = $thisPageTitle->getNsText(). ":" . $thisPageTitle->getText(); // we can't use Title object this is a key with an array so we generate the Ns:Name key
+    $thisPageTitleKey=$thisPageTitle->getText();
+      if ($thisPageTitle->getNsText()!="") {
+        $thisPageTitleKey = $thisPageTitle->getNsText(). ":" . $thisPageTitleKey; // we can't use Title object this is a key with an array so we generate the Ns:Name key
+      }
+
+
     $pageWithChanges[$thisPageTitleKey]=$changesForUsersForPage;
     $sumEditing+=evaluateCountOfAllEdits($changesForUsersForPage);
   }
