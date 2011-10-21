@@ -1,0 +1,3 @@
+digraph W {
+  rankdir = UB ;
+  node[fontsize=10, fontcolor="blue", shape="none", style=""] ;
