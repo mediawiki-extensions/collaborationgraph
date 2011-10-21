@@ -78,6 +78,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
    public function draw() {
     $text ='';
     $text .= $this->drawWikiLinksToUsers();
+    $text .= $this->drawWikiLinkToArticle();
     $text .= $this->drawEdgesLogThinkness();
     return $text;
   }
@@ -100,6 +101,13 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     }
     return $res;
   }
+    /**
+     * Do nothing but will be implemented in children classes
+     * @return string empty string
+     */
+    protected function drawWikiLinkToArticle() {
+        return "";
+    }
 
     /**
      * Draw only the identifier of a user
@@ -255,6 +263,21 @@ class CDFiguresDrawer extends CDGraphVizDrawer {
       return $this->drawUserNode($editorName) . "[label =\"\", image=\"$wgCollaborationDiagramUserIcon\" ];\n";
 
   }
+    /**
+     * Draw the article icon
+     * @return description of the article node with an image and tooltip
+     */
+    protected function drawWikiLinkToArticle() {
+
+        global $wgCollaborationDiagramArticleIcon, $IP;
+        if (!isset ($wgCollaborationDiagramArticleIcon)) {
+            $wgCollaborationDiagramArticleIcon="$IP/extensions/CollaborationDiagram/article_icon.png";
+        }
+        $res = "\"$this->thisPageTitle\"";
+        $res .= " [image=\"$wgCollaborationDiagramArticleIcon\"";
+        $res .= " tooltip=\"$this->thisPageTitle\" label=\"\"];\n";
+        return $res;
+    }
 
 }
 /*!
