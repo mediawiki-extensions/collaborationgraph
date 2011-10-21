@@ -1,0 +1,3 @@
+digraph W {
+  layout = "circo";
+  node[fontsize=10, fontcolor="blue", shape="none", style=""] ;
