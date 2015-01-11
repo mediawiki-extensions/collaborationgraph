@@ -2,7 +2,7 @@
 class CollaborationDiagram extends SpecialPage {
   function __construct() {
     parent::__construct( 'CollaborationDiagram' );
-    wfLoadExtensionMessages('CollaborationDiagram');
+//    wfLoadExtensionMessages('CollaborationDiagram');
   }
 
   function execute( $par ) {
@@ -15,7 +15,7 @@ class CollaborationDiagram extends SpecialPage {
     if ($wgRequest->getText('page')!="")
     {
       $param = $wgRequest->getText('page');
-      $param = mysql_escape_string($param);
+//      $param = mysql_real_escape_string($param);
       $output.="<collaborationdia page=\"$param\">";
     }
     else if ($wgRequest->getText('category')!="")

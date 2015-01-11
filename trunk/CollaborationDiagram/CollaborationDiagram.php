@@ -97,7 +97,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
         $res .= $this->drawUserNode ($editorName);
         $res .= $this->drawTooltip($editorName);
         $res .= $this->drawRedLink($editorName);
-        $res .= "; \n";
+        $res .= " \n";
     }
     return $res;
   }
@@ -106,7 +106,8 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
      * @return string empty string
      */
     protected function drawWikiLinkToArticle() {
-        return "";
+        return "\n\"" . Sanitizer::escapeId($this->thisPageTitle, 'noninitial') . "\"" .
+        " [label = \"$this->thisPageTitle\"]" ;
     }
 
     /**
@@ -115,8 +116,11 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
      * @return string like "User:qwerty"
      */
     protected function drawUserNode ($editorName) {
-        return  "\n\"User:$editorName\" ";
+        return  "\"User:" . Sanitizer::escapeId( $editorName, 'noninitial' ) . "\" ";
+    }
 
+    protected function drawPageNode() {
+        return Sanitizer::escapeId($this->thisPageTitle, 'noninitial');
     }
 
     protected function drawTooltip($editorName) {
@@ -144,7 +148,7 @@ class CDGraphVizDrawer extends CDAbstractDrawer{
     $text='';
     while (list($editorName,$numEditing)=each($this->changesForUsersForPage))
     {
-      $text.= "\n" . '"User:' . $editorName . '"' . ' -> ' . '"' . $this->thisPageTitle . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
+      $text.= "\n" . $this->drawUserNode($editorName) . ' -> ' . '"' . $this->drawPageNode() . '"' . " " . " [ penwidth=" . getLogThickness($numEditing, $this->sumEditing,22) . " label=".$numEditing ."]" . " ;";
     }
     return $text;
   }
@@ -376,9 +380,10 @@ function evaluateCountOfAllEdits($changesForUsers) {
 }
 
 function drawPreamble() {
-//  $text = "<pre>";
-    $text = "";
+  $text = "<pre>";
+//    $text = "";
     $text .= "<graphviz>\n";
+
   if (!is_file( dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin())) {
     $text .= 'digraph W {
       rankdir = LR ;
@@ -387,13 +392,17 @@ function drawPreamble() {
 
     }
     else {
+        /**
+         * @var WebRequest
+         */
+        global $wgRequest;
       $text .= file_get_contents(dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin());
-      $text .= "\n". 'node [URL="' . $_SERVER['SCRIPT_NAME'] . '?title=\N"] ;' . "\n";
+      $text .= "\n". 'node [URL="' . $wgRequest->detectServer() . $_SERVER["SCRIPT_NAME"] . '?title=\N"] ;' . "\n";
     } 
     return $text;
 }
 
-function drawDiagram($parser, $frame) {
+function drawDiagram(Parser $parser, PPFrame $frame) {
   global $wgTitle;
  
   $sumEditing=0;
@@ -423,6 +432,9 @@ function drawDiagram($parser, $frame) {
  // $text = getPie($changesForUsers, $sumEditing, $thisPageTitle);
 
   $parser->disableCache();
+
+  $parser->setTitle(Title::newFromText("Main_page"));
+  $frame->getTitle(Title::newFromText("Main_page"));
   $text = $parser->recursiveTagParse($text, $frame); //this stuff just render my page
   return $text;
 }
@@ -447,14 +459,14 @@ function showCollaborationDiagramTab( $obj , &$content_actions  )
 
   if( $wgTitle->exists() &&  ($wgTitle->getNamespace() != NS_SPECIAL) )
   {
-    wfLoadExtensionMessages('CollaborationDiagram');
+//    wfLoadExtensionMessages('CollaborationDiagram');
     
     $content_actions['CollaborationDiagram'] = array(
       'class' => false,
       'text' => wfMsgForContent('tabcollaboration'),
     );
 
-	$pageName = $wgArticle->getTitle()->getDbKey();
+	$pageName = $wgTitle->getDbKey();
     if ($wgTitle->getNamespace()==NS_CATEGORY)
     {
 	$content_actions['CollaborationDiagram']['href'] = Title::newFromText("CollaborationDiagram", NS_SPECIAL)->getFullUrl(array('category'=>$pageName));
