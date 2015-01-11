@@ -380,8 +380,8 @@ function evaluateCountOfAllEdits($changesForUsers) {
 }
 
 function drawPreamble() {
-  $text = "<pre>";
-//    $text = "";
+//  $text = "<pre>";
+    $text = "";
     $text .= "<graphviz>\n";
 
   if (!is_file( dirname( __FILE__). "/" . CDParameters::getInstance()->getSkin())) {
